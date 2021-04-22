@@ -1,0 +1,4 @@
+__pycache__
+/.mypy.cache
+*.egg-info
+setup.py

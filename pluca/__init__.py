@@ -1,6 +1,6 @@
 import abc
 from typing import (Optional, Any, Iterable, Mapping, Callable,
-                    Tuple, List, NoReturn, BinaryIO)
+                    Tuple, List, NoReturn)
 
 
 class CacheError(Exception):
@@ -33,7 +33,7 @@ class StdPickleMixin:
         return pickle.load(fd)
 
 
-class Adapter(abc.ABC):
+class CacheAdapter(abc.ABC):
 
     @abc.abstractclassmethod
     def put(self, key: Any, value: Any,
@@ -84,7 +84,7 @@ class Adapter(abc.ABC):
 
 
 class Cache(abc.ABC):
-    def __init__(self, adapter: Adapter):
+    def __init__(self, adapter: CacheAdapter):
         super().__init__()
         self._adapter = adapter
 

@@ -2,7 +2,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional, Any, NamedTuple
 
-from pluca import (Adapter as CacheAdapter, Cache, MD5CacheKeyMixin)
+from pluca import (CacheAdapter as PlucaCacheAdapter, Cache, MD5CacheKeyMixin)
 
 
 class _Entry(NamedTuple):
@@ -15,7 +15,7 @@ class _Entry(NamedTuple):
 
 
 @dataclass
-class Adapter(CacheAdapter, MD5CacheKeyMixin):
+class CacheAdapter(PlucaCacheAdapter, MD5CacheKeyMixin):
 
     max_entries: Optional[int] = None
 
@@ -72,4 +72,4 @@ class Adapter(CacheAdapter, MD5CacheKeyMixin):
 
 
 def create(max_entries: Optional[int] = None):
-    return Cache(Adapter(max_entries=max_entries))
+    return Cache(CacheAdapter(max_entries=max_entries))

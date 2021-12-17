@@ -4,17 +4,17 @@ from unittest.mock import Mock, call
 import pluca
 
 
-class Adapter(pluca.Adapter):
+class CacheAdapter(pluca.CacheAdapter):
     pass
 
 
-Adapter.__abstractmethods__ = set()  # type: ignore
+CacheAdapter.__abstractmethods__ = set()  # type: ignore
 
 
 class TestAdapter(unittest.TestCase):
 
     def test_has(self):
-        a = Adapter()
+        a = CacheAdapter()
 
         a.get = Mock(return_value=True)
         self.assertTrue(a.has('key'))
@@ -23,7 +23,7 @@ class TestAdapter(unittest.TestCase):
         self.assertFalse(a.has('key'))
 
     def test_put_many(self):
-        a = Adapter()
+        a = CacheAdapter()
 
         a.put = Mock()
         a.put_many([('k1', 1), ('k2', 2)], 10)
@@ -32,7 +32,7 @@ class TestAdapter(unittest.TestCase):
                              [call('k1', 1, 10), call('k2', 2, 10)])
 
     def test_get_many(self):
-        a = Adapter()
+        a = CacheAdapter()
 
         a.get = Mock()
         a.get_many(['k1', 'k2'])

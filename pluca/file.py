@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Any
 
-from pluca import (Adapter as CacheAdapter, Cache,
+from pluca import (CacheAdapter as PlucaCacheAdapter, Cache,
                    MD5CacheKeyMixin,
                    StdPickleMixin, CacheError)
 
@@ -16,7 +16,7 @@ _DIR_PREFIX = 'cache-'
 
 
 @dataclass
-class Adapter(CacheAdapter, MD5CacheKeyMixin, StdPickleMixin):
+class CacheAdapter(PlucaCacheAdapter, MD5CacheKeyMixin, StdPickleMixin):
     path: Optional[Path] = None
     name: Optional[str] = None
 
@@ -25,9 +25,10 @@ class Adapter(CacheAdapter, MD5CacheKeyMixin, StdPickleMixin):
             if isinstance(self.path, str):
                 self.path = Path(self.path)
             if not self.path.exists():
-                raise CacheError(f'Directory does not exist: {self.path}')
+                raise pluca.CacheError('Directory does not exist: '
+                                       f'{self.path}')
             if not self.path.is_dir():
-                raise CacheError(f'Not a directory: {self.path}')
+                raise pluca.CacheError(f'Not a directory: {self.path}')
         else:
             try:
                 import appdirs
@@ -124,4 +125,4 @@ class Adapter(CacheAdapter, MD5CacheKeyMixin, StdPickleMixin):
 
 def create(path: Optional[Path] = None,
            name: Optional[str] = None):
-    return Cache(Adapter(path=path, name=name))
+    return Cache(CacheAdapter(path=path, name=name))

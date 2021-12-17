@@ -1,9 +1,9 @@
 from typing import Optional, Any
 
-from pluca import Adapter as CacheAdapter, Cache
+from pluca import CacheAdapter as PlucaCacheAdapter, Cache
 
 
-class Adapter(CacheAdapter):
+class CacheAdapter(PlucaCacheAdapter):
 
     def put(self, key: Any, data: Any, max_age: Optional[float] = None):
         pass
@@ -25,4 +25,4 @@ class Adapter(CacheAdapter):
 
 
 def create():
-    return Cache(Adapter())
+    return Cache(CacheAdapter())

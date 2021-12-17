@@ -1,46 +1,47 @@
 import abc
-from typing import Optional, Any, Iterable, Mapping, Callable, NoReturn, Dict
+from typing import (Optional, Any, Iterable, Mapping, Callable,
+                    Tuple, List, NoReturn, BinaryIO)
 
 
-class Cache(abc.ABC):
+class CacheError(Exception):
+    pass
 
-    _pickle = None
-    _hash_algo = None
 
-    def _init_hash_algo(self):
+class MD5CacheKeyMixin:
+    def _get_cache_key(self, key: Any) -> Any:
         import hashlib
-        self._hash_algo = hashlib.md5
-
-    def _init_pickle(self):
-        import pickle
-        self._pickle = pickle
-
-    def __getstate__(self) -> Dict[str, Any]:
-        self.__dict__['_pickle'] = self.__dict__['_hash_algo'] = None
-        return self.__dict__
-
-    def _get_key_hash(self, key: Any) -> str:
-        if not self._hash_algo:
-            self._init_hash_algo()
-        assert self._hash_algo is not None
-        algo = self._hash_algo()
+        algo = hashlib.md5()
         algo.update(str(key).encode('utf-8'))
         return algo.hexdigest()
 
+
+class StdPickleMixin:
+    def _dump(self, obj: Any, fd: BinaryIO) -> None:
+        import pickle
+        pickle.dump(fd, obj)
+
+    def _dumps(self, obj: Any) -> bytes:
+        import pickle
+        return pickle.dumps(obj)
+
+    def _loads(self, data: bytes) -> Any:
+        import pickle
+        return pickle.loads(data)
+
+    def _load(self, fd: BinaryIO) -> Any:
+        import pickle
+        return pickle.load(fd)
+
+
+class Adapter(abc.ABC):
+
     @abc.abstractclassmethod
-    def _put(self, key: Any, value: Any, max_age: Optional[float] = None):
+    def put(self, key: Any, value: Any,
+            max_age: Optional[float] = None) -> None:
         pass
 
     @abc.abstractclassmethod
-    def _get(self, key) -> Any:
-        pass
-
-    @abc.abstractclassmethod
-    def _touch(self, key) -> None:
-        pass
-
-    @abc.abstractclassmethod
-    def _flush(self) -> None:
+    def get(self, key: Any) -> Any:
         pass
 
     def has(self, key: Any) -> bool:
@@ -48,30 +49,68 @@ class Cache(abc.ABC):
             self.get(key)
             return True
         except KeyError:
-            return False
+            pass
+        return False
+
+    @abc.abstractclassmethod
+    def remove(self, key: Any) -> None:
+        pass
+
+    @abc.abstractclassmethod
+    def flush(self) -> None:
+        pass
+
+    def put_many(self, data: Iterable[Tuple[Any, Any]],
+                 max_age: Optional[float] = None) -> None:
+        for (k, v) in data:
+            self.put(k, v, max_age)
+
+    def get_many(self, keys: Iterable[Any],
+                 default: Any = None) -> List[Tuple[Any, Any]]:
+        data = []
+        for k in keys:
+            try:
+                value = self.get(k)
+            except KeyError:
+                if default is None:
+                    continue
+                value = default
+            data.append((k, value))
+        return data
+
+    def gc(self) -> Optional[NoReturn]:
+        raise NotImplementedError(f'{self.__class__.__qualname__} does not '
+                                  'support garbage collection')
+
+
+class Cache(abc.ABC):
+    def __init__(self, adapter: Adapter):
+        super().__init__()
+        self._adapter = adapter
 
     def flush(self):
-        self._flush()
+        self._adapter.flush()
 
-    def touch(self, key: Any) -> None:
-        self._touch(key)
+    def has(self, key: Any) -> bool:
+        return self._adapter.has(key)
 
     def put(self, key: Any, value: Any,
             max_age: Optional[float] = None) -> None:
-        if not self._pickle:
-            self._init_pickle()
-        self._put(key, value, max_age)
+        self._adapter.put(key, value, max_age)
 
     def get(self, key: Any, default: Any = None) -> Any:
-        if not self._pickle:
-            self._init_pickle()
-
         try:
-            return self._get(key)
+            return self._adapter.get(key)
         except KeyError:
-            if default is not None:
-                return default
-            raise
+            if default is None:
+                raise
+        return default
+
+    def remove(self, key: Any) -> None:
+        self._adapter.remove(key)
+
+    def gc(self) -> None:
+        self._adapter.gc()
 
     def get_put(self, key: Any, func: Callable[[], Any],
                 max_age: Optional[float] = None) -> Any:
@@ -83,14 +122,16 @@ class Cache(abc.ABC):
         self.put(key, value, max_age)
         return value
 
-    def put_many(self, values: Mapping[Any, Any], max_age) -> None:
-        for (k, v) in values.items():
-            self.put(k, v)
+    def put_many(self,
+                 data: Mapping[Any, Any],
+                 max_age: Optional[float] = None) -> None:
+        self._adapter.put_many(data, max_age)
 
-    def get_many(self, keys: Iterable[Any],
-                 default: Any = None) -> Mapping[Any, Any]:
-        return {k: self.get(k, default) for k in keys}
+    def get_many(self,
+                 keys: Iterable[Any],
+                 default: Any = None) -> List[Tuple[Any, Any]]:
+        return self._adapter.get_many(keys, default)
 
-    def gc(self) -> Optional[NoReturn]:
-        raise NotImplementedError(f'{self.__class__.__qualname__} does not '
-                                  'support garbage collection')
+    @property
+    def adapter(self):
+        return self._adapter

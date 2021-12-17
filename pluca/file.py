@@ -6,25 +6,28 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Any
 
-import pluca
+from pluca import (Adapter as CacheAdapter, Cache,
+                   MD5CacheKeyMixin,
+                   StdPickleMixin, CacheError)
 
 _FILE_MAX_AGE = 1_000_000_000
 
+_DIR_PREFIX = 'cache-'
+
 
 @dataclass
-class Cache(pluca.Cache):
+class Adapter(CacheAdapter, MD5CacheKeyMixin, StdPickleMixin):
     path: Optional[Path] = None
     name: Optional[str] = None
-    max_age: Optional[float] = None
 
     def __post_init__(self):
         if self.path:
             if isinstance(self.path, str):
                 self.path = Path(self.path)
             if not self.path.exists():
-                raise ValueError(f'Directory does not exist: {self.path}')
+                raise CacheError(f'Directory does not exist: {self.path}')
             if not self.path.is_dir():
-                raise ValueError(f'Not a directory: {self.path}')
+                raise CacheError(f'Not a directory: {self.path}')
         else:
             try:
                 import appdirs
@@ -33,62 +36,29 @@ class Cache(pluca.Cache):
                 self.path = Path.home() / '.cache'
 
         if not self.name:
-            suffix = self._get_key_hash((__file__,
-                                         os.stat(__file__).st_ctime))
+            suffix = self._get_cache_key((__file__,
+                                          os.stat(__file__).st_ctime))
             self.name = f'pluca-{suffix}'
 
         self.path /= self.name
 
     def _get_filename(self, khash: str) -> Path:
         assert self.path is not None
-        return self.path / khash[0:2] / f'{khash[2:]}.dat'
+        return self.path / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat'
 
     def _get_key_filename(self, key: Any) -> Path:
-        return self._get_filename(self._get_key_hash(key))
+        return self._get_filename(self._get_cache_key(key))
 
-    def _write(self, filename: Path, pickled: Any):
+    def _write(self, filename: Path, data: bytes):
         with open(filename, 'wb') as fd:
-            fd.write(pickled)
+            fd.write(data)
 
-    def _touch_filename(self, filename: Path,
-                        max_age: Optional[float] = None):
+    def _set_max_age(self, filename: Path,
+                     max_age: Optional[float] = None):
         if max_age is None:
-            max_age = (self.max_age
-                       if self.max_age is not None else _FILE_MAX_AGE)
+            max_age = _FILE_MAX_AGE
         now = time.time()
         os.utime(filename, times=(now, now + max_age))
-
-    def _touch(self, key: Any) -> None:
-        filename = self._get_fresh_key_filename(key)
-        if filename:
-            self._touch_filename(filename)
-
-    def _put(self, key: Any, value: Any, max_age: Optional[float] = None):
-        assert self._pickle is not None
-        pickled = self._pickle.dumps(value)
-        filename = self._get_key_filename(key)
-        try:
-            self._write(filename, pickled)
-        except FileNotFoundError:
-            filename.parent.mkdir(parents=True)
-            self._write(filename, pickled)
-        self._touch_filename(filename, max_age)
-
-    def _get(self, key: Any) -> Any:
-        filename = self._get_fresh_key_filename(key)
-        if not filename:
-            raise KeyError(key)
-        with open(filename, 'rb') as fd:
-            assert self._pickle is not None
-            return self._pickle.load(fd)
-
-    def _flush(self) -> None:
-        assert self.path is not None
-        for path in self.path.iterdir():
-            if path.is_dir():
-                shutil.rmtree(path)
-            else:
-                warnings.warn(f'Unexpected file in cache directory: {path}')
 
     def _get_fresh_key_filename(self, key: Any) -> Optional[Path]:
         filename = self._get_key_filename(key)
@@ -106,12 +76,39 @@ class Cache(pluca.Cache):
 
         return filename
 
+    def put(self, key: Any, value: Any, max_age: Optional[float] = None):
+        data = self._dumps(value)
+        filename = self._get_key_filename(key)
+        try:
+            self._write(filename, data)
+        except FileNotFoundError:
+            filename.parent.mkdir(parents=True)
+            self._write(filename, data)
+        self._set_max_age(filename, max_age)
+
+    def get(self, key: Any) -> Any:
+        filename = self._get_fresh_key_filename(key)
+        if not filename:
+            raise KeyError(key)
+        with open(filename, 'rb') as fd:
+            return self._load(fd)
+
+    def remove(self, key: Any) -> None:
+        try:
+            self._get_key_filename(key).unlink()
+        except FileNotFoundError as ex:
+            raise KeyError(key) from ex
+
+    def flush(self) -> None:
+        assert self.path is not None
+        for path in self.path.iterdir():
+            if path.name.startswith(_DIR_PREFIX) and path.is_dir():
+                shutil.rmtree(path)
+            else:
+                warnings.warn(f'Unexpected entry in cache directory: {path}')
+
     def has(self, key: Any) -> bool:
         return self._get_fresh_key_filename(key) is not None
-
-    def gc(self) -> None:
-        assert self.path is not None
-        self._gc_dir(self.path)
 
     def _gc_dir(self, path: Path) -> None:
         for p in path.iterdir():
@@ -119,3 +116,12 @@ class Cache(pluca.Cache):
                 self._gc_dir(path / p)
             else:
                 self._get_fresh_filename(path / p)
+
+    def gc(self) -> None:
+        assert self.path is not None
+        self._gc_dir(self.path)
+
+
+def create(path: Optional[Path] = None,
+           name: Optional[str] = None):
+    return Cache(Adapter(path=path, name=name))

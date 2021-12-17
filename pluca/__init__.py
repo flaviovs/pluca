@@ -19,7 +19,7 @@ class CacheAdapter(abc.ABC):
 
     def _get_cache_key(self, key: Any) -> Any:
         import hashlib
-        algo = hashlib.md5()
+        algo = hashlib.sha1()
         algo.update(str(key).encode('utf-8'))
         return algo.hexdigest()
 

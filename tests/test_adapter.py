@@ -49,12 +49,12 @@ class TestAdapter(unittest.TestCase):
     def test_get_cache_key(self):
         a = CacheAdapter()
         self.assertEqual(a._get_cache_key('pluca is great'),
-                         '6e2c6ac95cedbd453d0eb9b1625abb6d')
+                         'cb41e32d47c85c26c88c506bec47ee9853dd536e')
 
     def test_get_cache_complex_key(self):
         a = CacheAdapter()
         self.assertEqual(a._get_cache_key(('test', 1, False, None, 3.1415)),
-                         'c1781abf178798ac9822573b32369829')
+                         '8274e4737af52d19a8f43a80764f9ebfbbf6dc5b')
 
     def test_get_cache_key_dict_preserve_order(self):
         a = CacheAdapter()

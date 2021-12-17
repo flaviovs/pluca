@@ -7,18 +7,7 @@ class CacheError(Exception):
     pass
 
 
-class MD5CacheKeyMixin:
-    def _get_cache_key(self, key: Any) -> Any:
-        import hashlib
-        algo = hashlib.md5()
-        algo.update(str(key).encode('utf-8'))
-        return algo.hexdigest()
-
-
-class StdPickleMixin:
-    def _dump(self, obj: Any, fd: BinaryIO) -> None:
-        import pickle
-        pickle.dump(fd, obj)
+class CacheAdapter(abc.ABC):
 
     def _dumps(self, obj: Any) -> bytes:
         import pickle
@@ -28,12 +17,11 @@ class StdPickleMixin:
         import pickle
         return pickle.loads(data)
 
-    def _load(self, fd: BinaryIO) -> Any:
-        import pickle
-        return pickle.load(fd)
-
-
-class CacheAdapter(abc.ABC):
+    def _get_cache_key(self, key: Any) -> Any:
+        import hashlib
+        algo = hashlib.md5()
+        algo.update(str(key).encode('utf-8'))
+        return algo.hexdigest()
 
     @abc.abstractclassmethod
     def put(self, key: Any, value: Any,

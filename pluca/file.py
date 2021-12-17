@@ -4,11 +4,9 @@ import time
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, BinaryIO
 
-from pluca import (CacheAdapter as PlucaCacheAdapter, Cache,
-                   MD5CacheKeyMixin,
-                   StdPickleMixin, CacheError)
+import pluca
 
 _FILE_MAX_AGE = 1_000_000_000
 
@@ -16,7 +14,7 @@ _DIR_PREFIX = 'cache-'
 
 
 @dataclass
-class CacheAdapter(PlucaCacheAdapter, MD5CacheKeyMixin, StdPickleMixin):
+class CacheAdapter(pluca.CacheAdapter):
     path: Optional[Path] = None
     name: Optional[str] = None
 
@@ -42,6 +40,14 @@ class CacheAdapter(PlucaCacheAdapter, MD5CacheKeyMixin, StdPickleMixin):
             self.name = f'pluca-{suffix}'
 
         self.path /= self.name
+
+    def _dump(self, obj: Any, fd: BinaryIO) -> None:
+        import pickle
+        pickle.dump(fd, obj)
+
+    def _load(self, fd: BinaryIO) -> Any:
+        import pickle
+        return pickle.load(fd)
 
     def _get_filename(self, khash: str) -> Path:
         assert self.path is not None
@@ -125,4 +131,4 @@ class CacheAdapter(PlucaCacheAdapter, MD5CacheKeyMixin, StdPickleMixin):
 
 def create(path: Optional[Path] = None,
            name: Optional[str] = None):
-    return Cache(CacheAdapter(path=path, name=name))
+    return pluca.Cache(CacheAdapter(path=path, name=name))

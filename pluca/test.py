@@ -72,6 +72,11 @@ class CacheTester(abc.ABC):
         with self.assertRaises(KeyError):
             c.get(key)
 
+    def test_remove_nonexistent(self):
+        c = self.get_cache()
+        with self.assertRaises(KeyError):
+            c.remove('nonexistent')
+
     def test_flush(self):
         c = self.get_cache()
         key1 = uuid.uuid4()

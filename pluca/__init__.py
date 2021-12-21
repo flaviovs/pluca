@@ -2,6 +2,8 @@ import abc
 from typing import (Optional, Any, Iterable, Mapping, Callable,
                     Tuple, List, NoReturn)
 
+__version__ = '0.1.1'
+
 
 class CacheError(Exception):
     pass

@@ -1,4 +1,5 @@
 import abc
+from functools import wraps
 from typing import (Optional, Any, Iterable, Mapping, Callable,
                     Tuple, List, NoReturn)
 
@@ -125,3 +126,18 @@ class Cache(abc.ABC):
     @property
     def adapter(self):
         return self._adapter
+
+    def __call__(self, func: Callable, max_age: Optional[int] = None):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            key = ('__pluca.decorator__', func.__qualname__,
+                   args, sorted(kwargs.items()))
+            try:
+                return self.get(key)
+            except KeyError:
+                pass
+            data = func(*args, **kwargs)
+            self.put(key, data, max_age)
+            return data
+
+        return wrapper

@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 from pluca import Cache
 import pluca.cache as plc
+import pluca.memory
 
 
 class TestCache(unittest.TestCase):
@@ -72,3 +73,32 @@ class TestCache(unittest.TestCase):
 
         import pluca.file
         self.assertIsInstance(cache.adapter, pluca.file.CacheAdapter)
+
+    def test_decorator(self):
+        cache = pluca.memory.create()
+
+        calls = 0
+
+        def func(a, b, c):
+            nonlocal calls
+            calls += 1
+            return a + b + c
+
+        dec = cache(func)
+
+        res1 = dec(1, 2, 3)
+        self.assertEqual(res1, 1 + 2 + 3)
+        self.assertEqual(1, calls)
+
+        res2 = dec(1, 2, 3)
+        self.assertEqual(res2, 1 + 2 + 3)
+        self.assertEqual(1, calls)  # NB: cached result.
+
+        res3 = dec(a=1, b=2, c=3)
+        self.assertEqual(res3, 1 + 2 + 3)
+        self.assertEqual(2, calls)
+
+        # Ensure that order of kwargs does not matter.
+        res4 = dec(c=3, a=1, b=2)
+        self.assertEqual(res4, 1 + 2 + 3)
+        self.assertEqual(2, calls)

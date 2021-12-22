@@ -87,6 +87,25 @@ print(cached_factorial(null_cache, 10))  # NB: Using file cache.
 print(cached_factorial(null_cache, 10))  # NB: Using file cache.
 # Output:
 # Calculating 10!
+
+# Caches can be used to decorate functions and cache their return values.
+@cache
+def expensive_calculation(alpha, beta):
+	res = 0
+	print('Doing expensive calculation')
+	for i in range(0, alpha):
+		for j in range(0, beta):
+			res = i * j
+	return res
+
+print(expensive_calculation(10, 20))
+# Output:
+# Doing expensive calculation
+# 171
+
+print(expensive_calculation(10, 20))
+# Output:
+# 171
 ```
 
 Included back-ends

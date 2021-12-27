@@ -3,7 +3,7 @@ from functools import wraps
 from typing import (Optional, Any, Iterable, Mapping, Callable,
                     Tuple, List, NoReturn)
 
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 
 
 class CacheError(Exception):

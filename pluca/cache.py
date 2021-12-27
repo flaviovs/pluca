@@ -6,9 +6,9 @@ from pluca import Cache
 _CACHES: Dict[str, Cache] = {}
 
 
-def add(name: str, factory: Union[str, Callable], *args, **kwargs) -> None:
-    if name in _CACHES:
-        raise ValueError(f'A cache named {name!r} already exists')
+def add(cache: str, factory: Union[str, Callable], *args, **kwargs) -> None:
+    if cache in _CACHES:
+        raise ValueError(f'A cache named {cache!r} already exists')
 
     if isinstance(factory, str):
         parts = factory.rsplit('.', 1)
@@ -18,19 +18,19 @@ def add(name: str, factory: Union[str, Callable], *args, **kwargs) -> None:
         factory = getattr(mod, parts[1])
 
     assert callable(factory)
-    _CACHES[name] = factory(*args, **kwargs)
+    _CACHES[cache] = factory(*args, **kwargs)
 
 
-def get(name: Optional[str] = None) -> Cache:
-    if not name:
-        name = 'default'
-        if name not in _CACHES:
+def get(cache: Optional[str] = None) -> Cache:
+    if not cache:
+        cache = 'default'
+        if cache not in _CACHES:
             basic_config()
-    return _CACHES[name]
+    return _CACHES[cache]
 
 
-def remove(name: str) -> None:
-    del _CACHES[name]
+def remove(cache: str) -> None:
+    del _CACHES[cache]
 
 
 def remove_all() -> None:

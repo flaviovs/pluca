@@ -74,7 +74,7 @@ class CacheAdapter(abc.ABC):
                                   'support garbage collection')
 
 
-class Cache(abc.ABC):
+class Cache:
     def __init__(self, adapter: CacheAdapter):
         super().__init__()
         self._adapter = adapter

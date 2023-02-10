@@ -75,6 +75,19 @@ class CacheAdapter(abc.ABC):
 
 
 class Cache:
+    """Pluggable Cache Architecture (pluca) cache interface.
+
+    This is the pluca cache adapter interface. It contains all the
+    logic to talk to specific cache adapters.
+
+    Usually cache adapter modules provide a factory function (usually
+    called `create()`) so that you do not need to instantiate `Cache`
+    objects directly. For example, when using the file adapter, you
+    can call `pluca.file.create(...)` to create a ready-to-use cache
+    object using the file adapter.
+
+    """
+
     def __init__(self, adapter: CacheAdapter):
         super().__init__()
         self._adapter = adapter

@@ -16,6 +16,19 @@ class _Entry(NamedTuple):
 
 @dataclass
 class CacheAdapter(pluca.CacheAdapter):
+    """Memory cache adapter for pluca.
+
+    Store cache entries in the program memory. All entries are lost
+    when the program exits.
+
+    By default there is no limit on the number of entries kept in the
+    cache. You can change that by specifying a maximum number of
+    entries in the `max_entries` parameter.
+
+    Args:
+        max_entries: Optional number of maximum cache entries.
+
+    """
 
     max_entries: Optional[int] = None
 

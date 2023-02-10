@@ -15,6 +15,28 @@ _DIR_PREFIX = 'cache-'
 
 @dataclass
 class CacheAdapter(pluca.CacheAdapter):
+    """File cache adapter for pluca.
+
+    Store cache entries on the file system.
+
+    Cache entries are stored by default in directories under `.cache`
+    in the user home directory (as returned by
+    `pathlib.Path.home()`). The location of this cache directory can
+    be changed by passing a new directory path in the `path`
+    parameter.
+
+    To support multiple file caches in the same app, each cache object
+    has its own directory under the cache directory. By default, these
+    directories are named `pluca-XXXXX`, where _XXXXX_ is a
+    semi-random string. However a custom name can be passed on the
+    `name` parameter for the cache.
+
+    Args:
+        path: Optional path where to store file caches.
+        name: The cache directory name.
+
+    """
+
     path: Optional[Path] = None
     name: Optional[str] = None
 

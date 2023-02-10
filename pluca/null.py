@@ -11,23 +11,22 @@ class CacheAdapter(pluca.CacheAdapter):
 
     """
 
-    def put(self, key: Any, data: Any, max_age: Optional[float] = None):
+    def put(self, key: Any, value: Any,
+            max_age: Optional[float] = None) -> None:
         pass
 
     def get(self, key: Any) -> Any:
         raise KeyError(key)
 
-    def remove(self, key: Any) -> None:
-        raise KeyError(key)
-
-    def flush(self) -> None:
-        pass
+    remove = get
 
     def has(self, key: Any) -> bool:
         return False
 
-    def gc(self) -> None:
+    def flush(self) -> None:
         pass
+
+    gc = flush
 
 
 def create():

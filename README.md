@@ -155,8 +155,7 @@ info):
 
 ## Using caches as decorators
 
-Caches can also be used to decorate functions and cache their return
-values:
+Caches can also be used as decorator to cache function return values:
 
     >>> @cache
     ... def expensive_calculation(alpha, beta):
@@ -178,6 +177,28 @@ result:
 
     >>> expensive_calculation(10, 20)
     171
+
+Each function can have their own expiration:
+
+    >>> @cache(max_age=2)  # Expire after two seconds.
+    ... def quick_calculation(alpha, beta):
+    ...     print(f'Calculating {alpha} + {beta}')
+    ...     return alpha + beta
+
+First call executes the function. Second call gets the cached value.
+
+    >>> quick_calculation(1, 2)
+    Calculating 1 + 2
+    3
+    >>> quick_calculation(1, 2)
+    3
+
+After the expiry time the calculation is done again:
+
+    >>> import time; time.sleep(2)
+    >>> quick_calculation(1, 2)
+    Calculating 1 + 2
+    3
 
 
 ## Miscelaneous

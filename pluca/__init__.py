@@ -1,5 +1,5 @@
 import abc
-from functools import wraps
+from functools import wraps, partial
 from typing import (Optional, Any, Iterable, Mapping, Callable,
                     Dict, Hashable, NoReturn)
 
@@ -140,7 +140,11 @@ class Cache:
     def adapter(self) -> CacheAdapter:
         return self._adapter
 
-    def __call__(self, func: Callable, max_age: Optional[int] = None):
+    def __call__(self, func: Callable = None, max_age: Optional[int] = None):
+
+        if func is None:
+            return partial(self.__call__, max_age=max_age)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             key = ('__pluca.decorator__', func.__qualname__,

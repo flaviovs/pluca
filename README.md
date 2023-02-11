@@ -79,8 +79,8 @@ can expire entries though, for example to use less resource. Here’s an
 example of how to store a cache entry with an explicit expiration
 time:
 
-    >>> cache.put('see-you', 'in three secs', 2)  # Expire in 3 seconds.
-    >>> import time; time.sleep(3)  # Now let's wait for it to expire.
+    >>> cache.put('see-you', 'in two secs', 2)  # Expire in 2 seconds.
+    >>> import time; time.sleep(3)  # Wait for it to expire.
     >>> cache.get('see-you')
     Traceback (most recent call last):
         ...

@@ -29,5 +29,5 @@ class CacheAdapter(pluca.CacheAdapter):
     gc = flush
 
 
-def create():
+def create() -> pluca.Cache:
     return pluca.Cache(CacheAdapter())

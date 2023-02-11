@@ -92,7 +92,7 @@ class Cache:
         super().__init__()
         self._adapter = adapter
 
-    def flush(self):
+    def flush(self) -> None:
         self._adapter.flush()
 
     def has(self, key: Hashable) -> bool:
@@ -137,7 +137,7 @@ class Cache:
         return self._adapter.get_many(keys, default)
 
     @property
-    def adapter(self):
+    def adapter(self) -> CacheAdapter:
         return self._adapter
 
     def __call__(self, func: Callable, max_age: Optional[int] = None):

@@ -78,12 +78,12 @@ class CacheAdapter(pluca.CacheAdapter):
     def _get_key_filename(self, key: Hashable) -> Path:
         return self._get_filename(self._get_cache_key(key))
 
-    def _write(self, filename: Path, data: bytes):
+    def _write(self, filename: Path, data: bytes) -> None:
         with open(filename, 'wb') as fd:
             fd.write(data)
 
     def _set_max_age(self, filename: Path,
-                     max_age: Optional[float] = None):
+                     max_age: Optional[float] = None) -> None:
         if max_age is None:
             max_age = _FILE_MAX_AGE
         now = time.time()
@@ -105,7 +105,8 @@ class CacheAdapter(pluca.CacheAdapter):
 
         return filename
 
-    def put(self, key: Hashable, value: Any, max_age: Optional[float] = None):
+    def put(self, key: Hashable, value: Any,
+            max_age: Optional[float] = None) -> None:
         data = self._dumps(value)
         filename = self._get_key_filename(key)
         try:
@@ -152,5 +153,5 @@ class CacheAdapter(pluca.CacheAdapter):
 
 
 def create(path: Optional[Path] = None,
-           name: Optional[str] = None):
+           name: Optional[str] = None) -> pluca.Cache:
     return pluca.Cache(CacheAdapter(path=path, name=name))

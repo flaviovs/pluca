@@ -1,6 +1,6 @@
 import time
 from dataclasses import dataclass
-from typing import Optional, Any, NamedTuple, Hashable
+from typing import Dict, Optional, Any, NamedTuple, Hashable
 
 import pluca
 
@@ -33,9 +33,10 @@ class CacheAdapter(pluca.CacheAdapter):
     max_entries: Optional[int] = None
 
     def __post_init__(self):
-        self._storage = {}
+        self._storage: Dict[Hashable, Any] = {}
 
-    def put(self, key: Hashable, data: Any, max_age: Optional[float] = None):
+    def put(self, key: Hashable, data: Any,
+            max_age: Optional[float] = None) -> None:
         self._storage[self._get_cache_key(key)] = _Entry(
             data=data,
             expire=(time.time() + max_age if max_age else float('inf')))
@@ -43,9 +44,11 @@ class CacheAdapter(pluca.CacheAdapter):
                 and len(self._storage) > self.max_entries):
             self._prune()
 
+    def _prune(self) -> None:
         assert self.max_entries is not None
 
         self.gc()
+
         items = sorted(self._storage.items(),
                        key=lambda x: x[1].expire,
                        reverse=True)
@@ -85,5 +88,5 @@ class CacheAdapter(pluca.CacheAdapter):
         self._storage = {k: e for k, e in self._storage.items() if e.is_fresh}
 
 
-def create(max_entries: Optional[int] = None):
+def create(max_entries: Optional[int] = None) -> pluca.Cache:
     return pluca.Cache(CacheAdapter(max_entries=max_entries))

@@ -4,7 +4,7 @@ Plugable cache architecture for Python
 *pluca* is a plugable cache architecture for Python 3
 applications. The package provides an unified interface to several
 cache adapters, which allows an application to switch cache back-ends
-on an as-needed basis with minimal or no code changes.
+on an as-needed basis with minimal changes.
 
 Features
 --------
@@ -22,97 +22,216 @@ Features
 How to use
 ----------
 
-```python
-from pluca.file import create  # Import file back-end factory function.
+First import the cache adapter factory:
 
-# Create the cache object.
-cache = create()
+    >>> from pluca.file import create  # Let's user the file system adapter.
 
-# Put something on the cache.
-cache.put('pi', 3.1415)
+Now create the cache object:
 
-# Retrieve the value from the cache.
-pi = cache.get('pi')
-print(type(pi), pi)
-# Output:
-# <class 'float'> 3.1415
+    >>> cache = create()
 
-# Handle non-existent/expired cache entries.
-try:
-	cache.get('notthere')
-except KeyError:
-	print('Not found on cache')
-	
-# Handle non-existent/expired entries with a default.
-value = cache.get('notthere', 12345)
-print(value)  # Output: 12345
+Put something on the cache:
 
-# Set expiration.
-cache.put('see-you', 'in three secs', 3)  # Expire the entry in 3 seconds.
-import time; time.sleep(4)
-cache.get('see-you')
-# KeyError: 'see-you'
+    >>> cache.put('pi', 3.1415)
 
-# Composite keys.
-key = (__name__, True, 'this', 'key', 'has', 'more', 'than', 1, 'value')
-cache.put(key, 'data')
-print(cache.get(key))  # Outputs: 'data'
+Now retrieve the value from the cache.
 
-# Abstract the cache back-end.
-from math import factorial
-def cached_factorial(cache, n):
-	try:
-		res = cache.get(('factorial', n))
-	except KeyError:
-		print(f'Calculating {n}!')
-		res = factorial(n)
-		cache.put(('factorial', n), res)
-	return res
+    >>> pi = cache.get('pi')
+    >>> pi
+    3.1415
+    >>> type(pi)
+    <class 'float'>
 
-print(cached_factorial(cache, 10))  # NB: Using file cache.
-# Output:
-# Calculating 10!
+Non-existent or expired cache entries raise `KeyError`.
 
-print(cached_factorial(cache, 10))  # NB: Using file cache.
-# Output: 3628800
+    >>> cache.get('notthere')
+    Traceback (most recent call last):
+        ...
+    KeyError: 'notthere'
 
-# Now let's switch to the "null" back-end.
-from pluca.null import create as create_null
-null_cache = create_null()
+Use `remove()` to delete entries from the cache:
 
-print(cached_factorial(null_cache, 10))  # NB: Using file cache.
-# Output:
-# Calculating 10!
+    >>> cache.put('foo', 'bar')
+    >>> cache.get('foo')
+    'bar'
+    >>> cache.remove('foo')
+    >>> cache.get('foo')
+    Traceback (most recent call last):
+        ...
+    KeyError: 'foo'
 
-print(cached_factorial(null_cache, 10))  # NB: Using file cache.
-# Output:
-# Calculating 10!
 
-# Caches can be used to decorate functions and cache their return values.
-@cache
-def expensive_calculation(alpha, beta):
-	res = 0
-	print('Doing expensive calculation')
-	for i in range(0, alpha):
-		for j in range(0, beta):
-			res = i * j
-	return res
+To test if a entry exists, use `has()`:
 
-print(expensive_calculation(10, 20))
-# Output:
-# Doing expensive calculation
-# 171
+    >>> cache.put('this', 'is in the cache')
+    >>> cache.has('this')
+    True
+    >>> cache.has('that')
+    False
 
-print(expensive_calculation(10, 20))
-# Output:
-# 171
-```
+You can provide a default value for non-existent/expired entries:
+
+    >>> cache.get('notthere', 12345)
+    12345
+
+By default cache entries are set to “never” expire — cache adapters
+can expire entries though, for example to use less resource. Here’s an
+example of how to store a cache entry with an explicit expiration
+time:
+
+    >>> cache.put('see-you', 'in three secs', 2)  # Expire in 3 seconds.
+    >>> import time; time.sleep(3)  # Now let's wait for it to expire.
+    >>> cache.get('see-you')
+    Traceback (most recent call last):
+        ...
+    KeyError: 'see-you'
+
+Cache keys can be any hashable:
+
+    >>> key = (__name__, True, 'this', 'key', 'has', 'more', 'than', 1, 'value')
+    >>> cache.put(key, 'data')
+    >>> cache.get(key)
+    'data'
+
+Flushing the cache remove all entries:
+
+    >>> cache.put('bye', 'tchau')
+    >>> cache.flush()
+    >>> cache.get('bye')
+    Traceback (most recent call last):
+        ...
+    KeyError: 'bye'
+
+## Abstracting cache back-ends
+
+Here’s how to abstract cache back-ends. First, let’s define a function
+that calculates a factorial. The function also receives a cache object
+to store results, so that the calculation results are cached.
+
+    >>> from math import factorial
+    >>> def cached_factorial(cache, n):
+    ...     try:
+    ...         res = cache.get(('factorial', n))
+    ...     except KeyError:
+    ...         print(f'CACHE MISS - calculating {n}!')
+    ...         res = factorial(n)
+    ...         cache.put(('factorial', n), res)
+    ...     return res
+
+Now let’s try this with the file cache created above. First call
+should be a cache miss:
+
+    >>> cached_factorial(cache, 10)
+    CACHE MISS - calculating 10!
+    3628800
+
+Subsequent calls should get the results from the cache:
+
+    >>> cached_factorial(cache, 10)
+    3628800
+
+Now let's switch to the “null” back-end (the “null” back-end does not
+store the data anywhere — see `help(pluca.null.CacheAdapter)` for more
+info):
+
+    >>> import pluca.null
+    >>> null_cache = pluca.null.create()
+    >>>
+    >>> cached_factorial(null_cache, 10)
+    CACHE MISS - calculating 10!
+    3628800
+
+
+## Using caches as decorators
+
+Caches can also be used to decorate functions and cache their return
+values:
+
+    >>> @cache
+    ... def expensive_calculation(alpha, beta):
+    ...     res = 0
+    ...     print('Doing expensive calculation')
+    ...     for i in range(0, alpha):
+    ...         for j in range(0, beta):
+    ...             res = i * j
+    ...     return res
+    >>>
+    >>> cache.flush()  # Let's start with an empty cache.
+    >>>
+    >>> expensive_calculation(10, 20)
+    Doing expensive calculation
+    171
+
+Calling the function again with the same parameters returns the cached
+result:
+
+    >>> expensive_calculation(10, 20)
+    171
+
+
+## Miscelaneous
+
+Use `get_put()` to conveniently get a value from the cache, or call a
+function to generate it, if it is not cached already:
+
+    >>> try:
+    ...     cache.remove('foo')
+    ... except KeyError:
+    ...     pass
+    >>>
+    >>> def calculate_foo():
+    ...    print('Calculating foo')
+    ...    return 'bar'
+    >>>
+    >>> cache.get_put('foo', calculate_foo)
+    Calculating foo
+    'bar'
+
+    >>> cache.get_put('foo', calculate_foo)
+    'bar'
+
+You can also put and get many entries at once:
+
+    >>> cache.put_many({'foo': 'bar', 'zee': 'too'})
+    >>> cache.get('zee')
+    'too'
+    >>> cache.put('pi', 3.1415)
+    >>> cache.get_many(['zee', 'pi'])
+    {'zee': 'too', 'pi': 3.1415}
+
+Notice that `get_many()` does **not* raise `KeyError` when a key does
+not exist. Instead, the key will not be present on the returned dict:
+
+    >>> cache.get_many(['pi', 'not-there'])
+    {'pi': 3.1415}
+
+
+The cache adapter object can be accessed in the `adapter` attribute:
+
+     >>> type(cache.adapter)
+     <class 'pluca.file.CacheAdapter'>
+     >>> cache.adapter # doctest: +ELLIPSIS
+     CacheAdapter(path=..., name=...)
+
+## Garbage collection.
+
+Garbage collection tells the cache to remove expired entries to save
+resources. This is done by the `gc()` method:
+
+    >>> cache.gc()
+
+Notice that **pluca never calls `gc()` automatically** — it is up to
+your application to call it eventually to do garbage collection.
+
 
 Included back-ends
 ------------------
 
-- *file* - store cache entries on file system entries
-- *memory* - a memory-only cache that exists for the duration of the cache instance
+These are the cache back-ends that come with the _pluca_ package:
+
+- *file* - store cache entries on the file system
+- *memory* - a memory-only cache that exists for the duration of the
+  cache instance
 - *null* - the null cache - `get()` always raises `KeyError`
 
 

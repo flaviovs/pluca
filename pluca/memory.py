@@ -43,7 +43,8 @@ class CacheAdapter(pluca.CacheAdapter):
                 and len(self._storage) > self.max_entries):
             self._prune()
 
-    def _prune(self):
+        assert self.max_entries is not None
+
         self.gc()
         items = sorted(self._storage.items(),
                        key=lambda x: x[1].expire,

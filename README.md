@@ -93,6 +93,17 @@ Cache keys can be any hashable:
     >>> cache.get(key)
     'data'
 
+Cached values can be any pickable data:
+
+    >>> import datetime
+    >>> alongtimeago = datetime.date(2020, 1, 1)
+    >>> cache.put('alongtimeago', alongtimeago)
+    >>> today = cache.get('alongtimeago')
+    >>> today
+    datetime.date(2020, 1, 1)
+    >>> type(today)
+    <class 'datetime.date'>
+
 Flushing the cache remove all entries:
 
     >>> cache.put('bye', 'tchau')

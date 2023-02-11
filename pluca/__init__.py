@@ -1,7 +1,7 @@
 import abc
 from functools import wraps
 from typing import (Optional, Any, Iterable, Mapping, Callable,
-                    Tuple, List, Dict, Hashable, NoReturn)
+                    Dict, Hashable, NoReturn)
 
 __version__ = '0.2.0'
 
@@ -20,22 +20,22 @@ class CacheAdapter(abc.ABC):
         import pickle
         return pickle.loads(data)
 
-    def _get_cache_key(self, key: Any) -> Any:
+    def _get_cache_key(self, key: Hashable) -> Any:
         import hashlib
         algo = hashlib.sha1()
         algo.update(str(key).encode('utf-8'))
         return algo.hexdigest()
 
     @abc.abstractclassmethod
-    def put(self, key: Any, value: Any,
+    def put(self, key: Hashable, value: Any,
             max_age: Optional[float] = None) -> None:
         pass
 
     @abc.abstractclassmethod
-    def get(self, key: Any) -> Any:
+    def get(self, key: Hashable) -> Any:
         pass
 
-    def has(self, key: Any) -> bool:
+    def has(self, key: Hashable) -> bool:
         try:
             self.get(key)
             return True
@@ -44,14 +44,14 @@ class CacheAdapter(abc.ABC):
         return False
 
     @abc.abstractclassmethod
-    def remove(self, key: Any) -> None:
+    def remove(self, key: Hashable) -> None:
         pass
 
     @abc.abstractclassmethod
     def flush(self) -> None:
         pass
 
-    def put_many(self, data: Dict[Hashable, Any],
+    def put_many(self, data: Mapping[Hashable, Any],
                  max_age: Optional[float] = None) -> None:
         for (k, v) in data.items():
             self.put(k, v, max_age)
@@ -95,14 +95,14 @@ class Cache:
     def flush(self):
         self._adapter.flush()
 
-    def has(self, key: Any) -> bool:
+    def has(self, key: Hashable) -> bool:
         return self._adapter.has(key)
 
-    def put(self, key: Any, value: Any,
+    def put(self, key: Hashable, value: Any,
             max_age: Optional[float] = None) -> None:
         self._adapter.put(key, value, max_age)
 
-    def get(self, key: Any, default: Any = None) -> Any:
+    def get(self, key: Hashable, default: Any = None) -> Any:
         try:
             return self._adapter.get(key)
         except KeyError:
@@ -110,13 +110,13 @@ class Cache:
                 raise
         return default
 
-    def remove(self, key: Any) -> None:
+    def remove(self, key: Hashable) -> None:
         self._adapter.remove(key)
 
     def gc(self) -> None:
         self._adapter.gc()
 
-    def get_put(self, key: Any, func: Callable[[], Any],
+    def get_put(self, key: Hashable, func: Callable[[], Any],
                 max_age: Optional[float] = None) -> Any:
         try:
             return self.get(key)
@@ -127,13 +127,13 @@ class Cache:
         return value
 
     def put_many(self,
-                 data: Mapping[Any, Any],
+                 data: Mapping[Hashable, Any],
                  max_age: Optional[float] = None) -> None:
         self._adapter.put_many(data, max_age)
 
     def get_many(self,
-                 keys: Iterable[Any],
-                 default: Any = None) -> List[Tuple[Any, Any]]:
+                 keys: Iterable[Hashable],
+                 default: Any = None) -> Dict[Hashable, Any]:
         return self._adapter.get_many(keys, default)
 
     @property

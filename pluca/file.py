@@ -4,7 +4,7 @@ import time
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Any, BinaryIO
+from typing import Optional, Any, BinaryIO, Hashable
 
 import pluca
 
@@ -75,7 +75,7 @@ class CacheAdapter(pluca.CacheAdapter):
         assert self.path is not None
         return self.path / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat'
 
-    def _get_key_filename(self, key: Any) -> Path:
+    def _get_key_filename(self, key: Hashable) -> Path:
         return self._get_filename(self._get_cache_key(key))
 
     def _write(self, filename: Path, data: bytes):
@@ -89,7 +89,7 @@ class CacheAdapter(pluca.CacheAdapter):
         now = time.time()
         os.utime(filename, times=(now, now + max_age))
 
-    def _get_fresh_key_filename(self, key: Any) -> Optional[Path]:
+    def _get_fresh_key_filename(self, key: Hashable) -> Optional[Path]:
         filename = self._get_key_filename(key)
         return self._get_fresh_filename(filename)
 
@@ -105,7 +105,7 @@ class CacheAdapter(pluca.CacheAdapter):
 
         return filename
 
-    def put(self, key: Any, value: Any, max_age: Optional[float] = None):
+    def put(self, key: Hashable, value: Any, max_age: Optional[float] = None):
         data = self._dumps(value)
         filename = self._get_key_filename(key)
         try:
@@ -115,14 +115,14 @@ class CacheAdapter(pluca.CacheAdapter):
             self._write(filename, data)
         self._set_max_age(filename, max_age)
 
-    def get(self, key: Any) -> Any:
+    def get(self, key: Hashable) -> Any:
         filename = self._get_fresh_key_filename(key)
         if not filename:
             raise KeyError(key)
         with open(filename, 'rb') as fd:
             return self._load(fd)
 
-    def remove(self, key: Any) -> None:
+    def remove(self, key: Hashable) -> None:
         try:
             self._get_key_filename(key).unlink()
         except FileNotFoundError as ex:
@@ -136,7 +136,7 @@ class CacheAdapter(pluca.CacheAdapter):
             else:
                 warnings.warn(f'Unexpected entry in cache directory: {path}')
 
-    def has(self, key: Any) -> bool:
+    def has(self, key: Hashable) -> bool:
         return self._get_fresh_key_filename(key) is not None
 
     def _gc_dir(self, path: Path) -> None:

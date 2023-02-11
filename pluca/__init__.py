@@ -1,7 +1,7 @@
 import abc
 from functools import wraps
 from typing import (Optional, Any, Iterable, Mapping, Callable,
-                    Tuple, List, NoReturn)
+                    Tuple, List, Dict, Hashable, NoReturn)
 
 __version__ = '0.2.0'
 
@@ -51,14 +51,14 @@ class CacheAdapter(abc.ABC):
     def flush(self) -> None:
         pass
 
-    def put_many(self, data: Iterable[Tuple[Any, Any]],
+    def put_many(self, data: Dict[Hashable, Any],
                  max_age: Optional[float] = None) -> None:
-        for (k, v) in data:
+        for (k, v) in data.items():
             self.put(k, v, max_age)
 
-    def get_many(self, keys: Iterable[Any],
-                 default: Any = None) -> List[Tuple[Any, Any]]:
-        data = []
+    def get_many(self, keys: Iterable[Hashable],
+                 default: Any = None) -> Dict[Hashable, Any]:
+        data = {}
         for k in keys:
             try:
                 value = self.get(k)
@@ -66,7 +66,7 @@ class CacheAdapter(abc.ABC):
                 if default is None:
                     continue
                 value = default
-            data.append((k, value))
+            data[k] = value
         return data
 
     def gc(self) -> Optional[NoReturn]:

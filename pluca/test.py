@@ -103,7 +103,7 @@ class CacheTester(abc.ABC):
         value1 = uuid.uuid4()
         key2 = uuid.uuid4()
         value2 = uuid.uuid4()
-        c.put_many([(key1, value1), (key2, value2)])
+        c.put_many({key1: value1, key2: value2})
         self.assertEqual(c.get(key1), value1)
         self.assertEqual(c.get(key2), value2)
 
@@ -115,7 +115,7 @@ class CacheTester(abc.ABC):
         value2 = uuid.uuid4()
         c.put(key1, value1)
         c.put(key2, value2)
-        res = dict(c.get_many([key1, key2, 'nonexistent']))
+        res = c.get_many([key1, key2, 'nonexistent'])
 
         self.assertIn(key1, res)
         self.assertEqual(res[key1], value1)

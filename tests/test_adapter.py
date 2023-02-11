@@ -26,7 +26,7 @@ class TestAdapter(unittest.TestCase):
         a = CacheAdapter()
 
         a.put = Mock()
-        a.put_many([('k1', 1), ('k2', 2)], 10)
+        a.put_many({'k1': 1, 'k2': 2}, 10)
 
         self.assertListEqual(a.put.call_args_list,
                              [call('k1', 1, 10), call('k2', 2, 10)])

@@ -256,6 +256,21 @@ Notice that **pluca never calls `gc()` automatically** — it is up to
 your application to call it eventually to do garbage collection.
 
 
+Caveats
+-------
+
+Cache keys are internally converted to strings using Python’s `repr()`
+function. As long as your keys objects have stable representations,
+this will cause no problems. However, for types with unstable
+representation, for example those that have no inherent ordering
+(e.g., _frozenset_), this can be problematic because there’s no
+guarantee that `repr(key)` will return the same string value every
+time. This applies even to objects deep inside your key. For example,
+this is a bad composite key:
+
+    >>> key = ('foo', ('another', set((1, 2, 3))))  # set is unstable
+
+
 Included back-ends
 ------------------
 

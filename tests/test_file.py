@@ -5,24 +5,28 @@ import shutil
 import uuid
 import time
 from pathlib import Path
+from typing import Optional
 
+import pluca
 from pluca.file import create
 from pluca.test import CacheTester
 
 
-class TestFile(unittest.TestCase, CacheTester):
+class TestFile(CacheTester, unittest.TestCase):
 
-    def setUp(self):
-        self._dir = tempfile.mkdtemp(prefix='pluca-file-test')
+    def setUp(self) -> None:
+        self._dir: Optional[Path] = Path(
+            tempfile.mkdtemp(prefix='pluca-file-test'))
 
-    def tearDown(self):
-        shutil.rmtree(self._dir)
-        self._dir = None
+    def tearDown(self) -> None:
+        if self._dir is not None:
+            shutil.rmtree(self._dir)
+            self._dir = None
 
-    def get_cache(self):
-        return create(path=self._dir)
+    def get_cache(self) -> pluca.Cache:
+        return create(name='test', path=self._dir)
 
-    def test_flush_empties_dir(self):
+    def test_flush_empties_dir(self) -> None:
         c = self.get_cache()
         key1 = uuid.uuid4()
         key2 = uuid.uuid4()
@@ -40,7 +44,7 @@ class TestFile(unittest.TestCase, CacheTester):
                 nr += 1
         return nr
 
-    def test_gc(self):
+    def test_gc(self) -> None:
         c = self.get_cache()
         key1 = uuid.uuid4()
         key2 = uuid.uuid4()

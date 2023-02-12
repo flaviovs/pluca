@@ -7,7 +7,7 @@ import pluca
 
 class _Entry(NamedTuple):
     data: Any
-    expire: Optional[float]
+    expire: float
 
     @property
     def is_fresh(self) -> bool:
@@ -32,8 +32,8 @@ class CacheAdapter(pluca.CacheAdapter):
 
     max_entries: Optional[int] = None
 
-    def __post_init__(self):
-        self._storage: Dict[Hashable, Any] = {}
+    def __post_init__(self) -> None:
+        self._storage: Dict[Hashable, _Entry] = {}
 
     def put(self, key: Hashable, data: Any,
             max_age: Optional[float] = None) -> None:

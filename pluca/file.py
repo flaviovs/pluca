@@ -40,7 +40,7 @@ class CacheAdapter(pluca.CacheAdapter):
     path: Optional[Path] = None
     name: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.path:
             if isinstance(self.path, str):
                 self.path = Path(self.path)

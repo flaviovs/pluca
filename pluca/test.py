@@ -1,18 +1,27 @@
 import abc
 import uuid
 import time
+import unittest
+from typing import TYPE_CHECKING
+
+import pluca
+
+if TYPE_CHECKING:
+    _BaseClass = unittest.TestCase
+else:
+    _BaseClass = object
 
 
-class CacheTester(abc.ABC):
+class CacheTester(abc.ABC, _BaseClass):
 
     @abc.abstractmethod
-    def get_cache(self):
+    def get_cache(self) -> pluca.Cache:
         pass
 
-    def test_create(self):
+    def test_create(self) -> None:
         self.get_cache()
 
-    def test_put_get(self):
+    def test_put_get(self) -> None:
         c = self.get_cache()
         key1 = uuid.uuid4()
         value1 = uuid.uuid4()
@@ -23,11 +32,11 @@ class CacheTester(abc.ABC):
         self.assertEqual(c.get(key1), value1)
         self.assertEqual(c.get(key2), value2)
 
-    def test_get_default(self):
+    def test_get_default(self) -> None:
         c = self.get_cache()
         self.assertEqual(c.get('nonexistent', 'default'), 'default')
 
-    def test_put_max_age(self):
+    def test_put_max_age(self) -> None:
         c = self.get_cache()
         key = uuid.uuid4()
         value = uuid.uuid4()
@@ -64,7 +73,7 @@ class CacheTester(abc.ABC):
         c.put(key, value)
         self.assertEqual(c.get(key), value)
 
-    def test_remove(self):
+    def test_remove(self) -> None:
         c = self.get_cache()
         key = uuid.uuid4()
         c.put(key, 'value')
@@ -72,12 +81,12 @@ class CacheTester(abc.ABC):
         with self.assertRaises(KeyError):
             c.get(key)
 
-    def test_remove_nonexistent(self):
+    def test_remove_nonexistent(self) -> None:
         c = self.get_cache()
         with self.assertRaises(KeyError):
             c.remove('nonexistent')
 
-    def test_flush(self):
+    def test_flush(self) -> None:
         c = self.get_cache()
         key1 = uuid.uuid4()
         key2 = uuid.uuid4()
@@ -89,7 +98,7 @@ class CacheTester(abc.ABC):
         with self.assertRaises(KeyError):
             c.get(key2)
 
-    def test_has(self):
+    def test_has(self) -> None:
         c = self.get_cache()
         key = uuid.uuid4()
         value = uuid.uuid4()
@@ -97,7 +106,7 @@ class CacheTester(abc.ABC):
         self.assertTrue(c.has(key))
         self.assertFalse(c.has('nonexistentkey'))
 
-    def test_put_many(self):
+    def test_put_many(self) -> None:
         c = self.get_cache()
         key1 = uuid.uuid4()
         value1 = uuid.uuid4()
@@ -107,7 +116,7 @@ class CacheTester(abc.ABC):
         self.assertEqual(c.get(key1), value1)
         self.assertEqual(c.get(key2), value2)
 
-    def test_get_many(self):
+    def test_get_many(self) -> None:
         c = self.get_cache()
         key1 = uuid.uuid4()
         value1 = uuid.uuid4()
@@ -123,7 +132,7 @@ class CacheTester(abc.ABC):
         self.assertEqual(res[key2], value2)
         self.assertNotIn('nonexistent', res)
 
-    def test_get_many_default(self):
+    def test_get_many_default(self) -> None:
         c = self.get_cache()
         key = uuid.uuid4()
         value = uuid.uuid4()

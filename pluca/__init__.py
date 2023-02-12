@@ -140,13 +140,16 @@ class Cache:
     def adapter(self) -> CacheAdapter:
         return self._adapter
 
-    def __call__(self, func: Callable = None, max_age: Optional[int] = None):
+    def __call__(self, func: Optional[Callable[..., Any]] = None,
+                 max_age: Optional[int] = None) -> Callable[..., Any]:
 
         if func is None:
             return partial(self.__call__, max_age=max_age)
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> Any:  # type: ignore[no-untyped-def]
+            assert func
+
             key = ('__pluca.decorator__', func.__qualname__,
                    args, sorted(kwargs.items()))
             try:

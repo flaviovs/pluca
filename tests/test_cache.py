@@ -9,7 +9,7 @@ import pluca.memory
 
 class TestCache(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         # Make sure that pluca standard adapters used are unloaded
         # before tests.
         for mod in ('pluca.file', 'pluca.null'):
@@ -18,7 +18,7 @@ class TestCache(unittest.TestCase):
             except KeyError:
                 pass
 
-    def test_add_get(self):
+    def test_add_get(self) -> None:
         plc.add('test_add_get', 'pluca.file.create')
 
         cache = plc.get('test_add_get')
@@ -27,23 +27,23 @@ class TestCache(unittest.TestCase):
         import pluca.file
         self.assertIsInstance(cache.adapter, pluca.file.CacheAdapter)
 
-    def test_add_callback(self):
+    def test_add_callback(self) -> None:
         cb = Mock()
         plc.add('test_add_callback', cb)
         self.assertEqual(cb.call_count, 1)
 
-    def test_add_dup_name(self):
+    def test_add_dup_name(self) -> None:
         plc.add('test_add_dup_name', 'pluca.null.create')
         with self.assertRaises(ValueError):
             plc.add('test_add_dup_name', 'pluca.null.create')
 
-    def test_remove(self):
+    def test_remove(self) -> None:
         plc.add('test_remove', 'pluca.null.create')
         plc.remove('test_remove')
         with self.assertRaises(KeyError):
             plc.get('test_remove')
 
-    def test_remove_all(self):
+    def test_remove_all(self) -> None:
         plc.add('test_remove_all_1', 'pluca.null.create')
         plc.add('test_remove_all_2', 'pluca.null.create')
         plc.add('test_remove_all_3', 'pluca.null.create')
@@ -57,7 +57,7 @@ class TestCache(unittest.TestCase):
         with self.assertRaises(KeyError):
             plc.get('test_remove_all_3')
 
-    def test_basic_config(self):
+    def test_basic_config(self) -> None:
         plc.basic_config()
 
         cache = plc.get()
@@ -66,7 +66,7 @@ class TestCache(unittest.TestCase):
         import pluca.file
         self.assertIsInstance(cache.adapter, pluca.file.CacheAdapter)
 
-    def test_get_default_calls_basic_config(self):
+    def test_get_default_calls_basic_config(self) -> None:
         plc.remove_all()
         cache = plc.get()
         self.assertIsInstance(cache, Cache)
@@ -74,12 +74,12 @@ class TestCache(unittest.TestCase):
         import pluca.file
         self.assertIsInstance(cache.adapter, pluca.file.CacheAdapter)
 
-    def test_decorator(self):
+    def test_decorator(self) -> None:
         cache = pluca.memory.create()
 
         calls = 0
 
-        def func(a, b, c):
+        def func(a: int, b: int, c: int) -> int:
             nonlocal calls
             calls += 1
             return a + b + c

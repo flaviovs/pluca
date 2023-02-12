@@ -1,15 +1,16 @@
 import unittest
 
+import pluca
 from pluca.memory import create
 from pluca.test import CacheTester
 
 
-class TestMemory(unittest.TestCase, CacheTester):
+class TestMemory(CacheTester, unittest.TestCase):
 
-    def get_cache(self):
+    def get_cache(self) -> pluca.Cache:
         return create()
 
-    def test_max_entries(self):
+    def test_max_entries(self) -> None:
         c = create(max_entries=3)
 
         c.put('key1', 1, 10)  # Earliest expiration, will be removed.

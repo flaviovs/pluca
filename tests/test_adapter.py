@@ -8,6 +8,10 @@ class CacheAdapter(pluca.CacheAdapter):
     pass
 
 
+class _AlternateString(str):
+    pass
+
+
 CacheAdapter.__abstractmethods__ = set()  # type: ignore
 
 
@@ -46,20 +50,21 @@ class TestAdapter(unittest.TestCase):
 
         self.assertEqual(a._loads(a._dumps(data)), data)
 
-    def test_get_cache_key(self) -> None:
+    def test_map_key(self) -> None:
         a = CacheAdapter()
-        self.assertEqual(a._get_cache_key('pluca is great'),
-                         'cb41e32d47c85c26c88c506bec47ee9853dd536e')
+        self.assertEqual(a._map_key('pluca is great'),
+                         'ecea4f8d629a85bd4e156e558fc2c9a12012e672')
 
-    def test_get_cache_complex_key(self) -> None:
+    def test_map_key_composite(self) -> None:
         a = CacheAdapter()
-        self.assertEqual(a._get_cache_key(('test', 1, False, None, 3.1415)),
-                         '8274e4737af52d19a8f43a80764f9ebfbbf6dc5b')
+        self.assertEqual(a._map_key(('test', 1, False, None, 3.1415)),
+                         '9017e9563eafdc3b2b6232a2cb496bd79329187f')
 
-    def test_get_cache_key_dict_preserve_order(self):
+    def test_map_key_check_type(self) -> None:
         a = CacheAdapter()
+        self.assertNotEqual(a._map_key(1), a._map_key('1'))
 
-        key1 = {'a': 1, 'b': 2}
-        key2 = {'b': 2, 'a': 1}
+        s1 = 'foo'
+        s2 = _AlternateString('foo')
 
-        self.assertNotEqual(a._get_cache_key(key1), a._get_cache_key(key2))
+        self.assertNotEqual(a._map_key(s1), a._map_key(s2))

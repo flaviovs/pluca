@@ -57,8 +57,8 @@ class CacheAdapter(pluca.CacheAdapter):
                 self.path = Path.home() / '.cache'
 
         if not self.name:
-            suffix = self._get_cache_key((__file__,
-                                          os.stat(__file__).st_ctime))
+            suffix = self._map_key((__file__,
+                                    os.stat(__file__).st_ctime))
             self.name = f'pluca-{suffix}'
 
         self.path /= self.name
@@ -76,7 +76,7 @@ class CacheAdapter(pluca.CacheAdapter):
         return self.path / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat'
 
     def _get_key_filename(self, key: Hashable) -> Path:
-        return self._get_filename(self._get_cache_key(key))
+        return self._get_filename(self._map_key(key))
 
     def _write(self, filename: Path, data: bytes) -> None:
         with open(filename, 'wb') as fd:

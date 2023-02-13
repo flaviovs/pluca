@@ -37,7 +37,7 @@ class CacheAdapter(pluca.CacheAdapter):
 
     def put(self, key: Hashable, data: Any,
             max_age: Optional[float] = None) -> None:
-        self._storage[self._get_cache_key(key)] = _Entry(
+        self._storage[self._map_key(key)] = _Entry(
             data=data,
             expire=(time.time() + max_age if max_age else float('inf')))
         if (self.max_entries is not None
@@ -61,7 +61,7 @@ class CacheAdapter(pluca.CacheAdapter):
                 break
 
     def get(self, key: Hashable) -> Any:
-        skey = self._get_cache_key(key)
+        skey = self._map_key(key)
         entry = self._storage[skey]
         if not entry.is_fresh:
             del self._storage[skey]
@@ -69,7 +69,7 @@ class CacheAdapter(pluca.CacheAdapter):
         return entry.data
 
     def remove(self, key: Hashable) -> None:
-        skey = self._get_cache_key(key)
+        skey = self._map_key(key)
         try:
             entry = self._storage[skey]
         except KeyError as ex:
@@ -82,7 +82,7 @@ class CacheAdapter(pluca.CacheAdapter):
         self._storage = {}
 
     def has(self, key: Hashable) -> bool:
-        return self._get_cache_key(key) in self._storage
+        return self._map_key(key) in self._storage
 
     def gc(self) -> None:
         self._storage = {k: e for k, e in self._storage.items() if e.is_fresh}

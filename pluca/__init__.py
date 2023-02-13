@@ -20,7 +20,7 @@ class CacheAdapter(abc.ABC):
         import pickle
         return pickle.loads(data)
 
-    def _get_cache_key(self, key: Hashable) -> Any:
+    def _map_key(self, key: Hashable) -> str:
         import hashlib
         algo = hashlib.sha1()
         algo.update(repr((type(key), key)).encode('utf-8'))

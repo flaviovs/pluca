@@ -37,43 +37,34 @@ class CacheAdapter(pluca.CacheAdapter):
 
     """
 
-    path: Optional[Path] = None
-    name: Optional[str] = None
+    name: str = 'pluca'
+    cache_dir: Optional[Path] = None
 
     def __post_init__(self) -> None:
-        if self.path:
-            if isinstance(self.path, str):
-                self.path = Path(self.path)
-            if not self.path.exists():
-                raise pluca.CacheError('Directory does not exist: '
-                                       f'{self.path}')
-            if not self.path.is_dir():
-                raise pluca.CacheError(f'Not a directory: {self.path}')
-        else:
+        if self.cache_dir is None:
             try:
-                import appdirs
-                self.path = Path(appdirs.user_cache_dir())
+                import appdirs  # pylint: disable=import-outside-toplevel
+                self.cache_dir = Path(appdirs.user_cache_dir())
             except ModuleNotFoundError:
-                self.path = Path.home() / '.cache'
+                self.cache_dir = Path.home() / '.cache'
+        elif isinstance(self.cache_dir, str):
+            self.cache_dir = Path(self.cache_dir)
 
-        if not self.name:
-            suffix = self._map_key((__file__,
-                                    os.stat(__file__).st_ctime))
-            self.name = f'pluca-{suffix}'
-
-        self.path /= self.name
+        if not self.cache_dir.exists():
+            self.cache_dir.mkdir(parents=True)
 
     def _dump(self, obj: Any, fd: BinaryIO) -> None:
-        import pickle
+        import pickle  # pylint: disable=import-outside-toplevel
         pickle.dump(fd, obj)
 
     def _load(self, fd: BinaryIO) -> Any:
-        import pickle
+        import pickle  # pylint: disable=import-outside-toplevel
         return pickle.load(fd)
 
     def _get_filename(self, khash: str) -> Path:
-        assert self.path is not None
-        return self.path / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat'
+        assert self.cache_dir is not None
+        return (self.cache_dir / self.name
+                / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat')
 
     def _get_key_filename(self, key: Hashable) -> Path:
         return self._get_filename(self._map_key(key))
@@ -130,8 +121,8 @@ class CacheAdapter(pluca.CacheAdapter):
             raise KeyError(key) from ex
 
     def flush(self) -> None:
-        assert self.path is not None
-        for path in self.path.iterdir():
+        assert self.cache_dir is not None
+        for path in (self.cache_dir / self.name).iterdir():
             if path.name.startswith(_DIR_PREFIX) and path.is_dir():
                 shutil.rmtree(path)
             else:
@@ -141,17 +132,17 @@ class CacheAdapter(pluca.CacheAdapter):
         return self._get_fresh_key_filename(key) is not None
 
     def _gc_dir(self, path: Path) -> None:
-        for p in path.iterdir():
-            if p.is_dir():
-                self._gc_dir(path / p)
+        for entry in path.iterdir():
+            if entry.is_dir():
+                self._gc_dir(path / entry)
             else:
-                self._get_fresh_filename(path / p)
+                self._get_fresh_filename(path / entry)
 
     def gc(self) -> None:
-        assert self.path is not None
-        self._gc_dir(self.path)
+        assert self.cache_dir is not None
+        self._gc_dir(self.cache_dir / self.name)
 
 
-def create(path: Optional[Path] = None,
-           name: Optional[str] = None) -> pluca.Cache:
-    return pluca.Cache(CacheAdapter(path=path, name=name))
+def create(name: str = 'pluca',
+           cache_dir: Optional[Path] = None) -> pluca.Cache:
+    return pluca.Cache(CacheAdapter(name=name, cache_dir=cache_dir))

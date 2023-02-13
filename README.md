@@ -243,7 +243,7 @@ The cache adapter object can be accessed in the `adapter` attribute:
      >>> type(cache.adapter)
      <class 'pluca.file.CacheAdapter'>
      >>> cache.adapter # doctest: +ELLIPSIS
-     CacheAdapter(path=..., name=...)
+     CacheAdapter(name=..., cache_dir=...)
 
 ## Garbage collection.
 

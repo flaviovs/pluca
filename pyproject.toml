@@ -15,3 +15,9 @@ module = [
        "appdirs"
        ]
 ignore_missing_imports = true
+
+[tool.taskipy.tasks]
+test = "python -m doctest README.md && python -m unittest tests/test_*.py"
+lint = "flake8 && mypy && pylint --jobs=0 pluca"
+pre-commit = "task lint"
+pre-push = "task lint && task test"

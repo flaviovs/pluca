@@ -32,6 +32,17 @@ class CacheTester(abc.ABC, _BaseClass):
         self.assertEqual(c.get(key1), value1)
         self.assertEqual(c.get(key2), value2)
 
+    def test_put_get_check_key_types(self) -> None:
+        c = self.get_cache()
+        value1 = uuid.uuid4()
+        value2 = uuid.uuid4()
+
+        c.put(1, value1)
+        c.put('1', value2)
+
+        self.assertEqual(c.get(1), value1)
+        self.assertEqual(c.get('1'), value2)
+
     def test_get_default(self) -> None:
         c = self.get_cache()
         self.assertEqual(c.get('nonexistent', 'default'), 'default')

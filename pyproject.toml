@@ -3,7 +3,11 @@ requires = ["setuptools >= 40.9.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.mypy]
-files = "."
+python_version = "3.7"
+
+files = ["pluca", "tests"]
+show_error_codes = true
+strict = true
 
 [[tool.mypy.overrides]]
 module = [

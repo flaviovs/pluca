@@ -61,6 +61,11 @@ class CacheTester(abc.ABC, _BaseClass):
             cache.get(key)
         self.assertEqual(ctx.exception.args, (key,))
 
+    def test_put_max_age_validate(self) -> None:
+        cache = self.get_cache()
+        with self.assertRaises(ValueError):
+            cache.put('k', 'v', -1)
+
     def test_put_tuple_key(self) -> None:
         cache = self.get_cache()
         key = (uuid.uuid4(), uuid.uuid4())

@@ -20,6 +20,9 @@ class Cache(abc.ABC):
 
     def put(self, key: Any, value: Any,
             max_age: Optional[float] = None) -> None:
+        if max_age and max_age < 0:
+            raise ValueError('Cache max_age must be greater or equal to zero, '
+                             f'got {max_age}')
         self._put(self._map_key(key), value, max_age)
 
     def get(self, key: Any, default: Any = ...) -> Any:

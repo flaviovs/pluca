@@ -1,7 +1,7 @@
 import abc
 from functools import wraps, partial
 from typing import (Optional, Any, Iterable, Mapping, Callable,
-                    Dict, Hashable, NoReturn)
+                    List, Tuple, NoReturn, Union)
 
 __version__ = '0.2.0'
 
@@ -13,29 +13,29 @@ class CacheError(Exception):
 class CacheAdapter(abc.ABC):
 
     def _dumps(self, obj: Any) -> bytes:
-        import pickle
+        import pickle  # pylint: disable=import-outside-toplevel
         return pickle.dumps(obj)
 
     def _loads(self, data: bytes) -> Any:
-        import pickle
+        import pickle  # pylint: disable=import-outside-toplevel
         return pickle.loads(data)
 
-    def _map_key(self, key: Hashable) -> str:
-        import hashlib
+    def _map_key(self, key: Any) -> str:
+        import hashlib  # pylint: disable=import-outside-toplevel
         algo = hashlib.sha1()
         algo.update(repr((type(key), key)).encode('utf-8'))
         return algo.hexdigest()
 
-    @abc.abstractclassmethod
-    def put(self, key: Hashable, value: Any,
+    @abc.abstractmethod
+    def put(self, key: Any, value: Any,
             max_age: Optional[float] = None) -> None:
         pass
 
-    @abc.abstractclassmethod
-    def get(self, key: Hashable) -> Any:
+    @abc.abstractmethod
+    def get(self, key: Any) -> Any:
         pass
 
-    def has(self, key: Hashable) -> bool:
+    def has(self, key: Any) -> bool:
         try:
             self.get(key)
             return True
@@ -43,30 +43,33 @@ class CacheAdapter(abc.ABC):
             pass
         return False
 
-    @abc.abstractclassmethod
-    def remove(self, key: Hashable) -> None:
+    @abc.abstractmethod
+    def remove(self, key: Any) -> None:
         pass
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def flush(self) -> None:
         pass
 
-    def put_many(self, data: Mapping[Hashable, Any],
+    def put_many(self,
+                 data: Union[Mapping[Any, Any], Iterable[Tuple[Any, Any]]],
                  max_age: Optional[float] = None) -> None:
-        for (k, v) in data.items():
+        if isinstance(data, Mapping):
+            data = data.items()
+        for (k, v) in data:
             self.put(k, v, max_age)
 
-    def get_many(self, keys: Iterable[Hashable],
-                 default: Any = None) -> Dict[Hashable, Any]:
-        data = {}
-        for k in keys:
+    def get_many(self, keys: Iterable[Any],
+                 default: Any = None) -> List[Tuple[Any, Any]]:
+        data = []
+        for key in keys:
             try:
-                value = self.get(k)
+                value = self.get(key)
             except KeyError:
                 if default is None:
                     continue
                 value = default
-            data[k] = value
+            data.append((key, value))
         return data
 
     def gc(self) -> Optional[NoReturn]:
@@ -95,14 +98,14 @@ class Cache:
     def flush(self) -> None:
         self._adapter.flush()
 
-    def has(self, key: Hashable) -> bool:
+    def has(self, key: Any) -> bool:
         return self._adapter.has(key)
 
-    def put(self, key: Hashable, value: Any,
+    def put(self, key: Any, value: Any,
             max_age: Optional[float] = None) -> None:
         self._adapter.put(key, value, max_age)
 
-    def get(self, key: Hashable, default: Any = None) -> Any:
+    def get(self, key: Any, default: Any = None) -> Any:
         try:
             return self._adapter.get(key)
         except KeyError:
@@ -110,13 +113,13 @@ class Cache:
                 raise
         return default
 
-    def remove(self, key: Hashable) -> None:
+    def remove(self, key: Any) -> None:
         self._adapter.remove(key)
 
     def gc(self) -> None:
         self._adapter.gc()
 
-    def get_put(self, key: Hashable, func: Callable[[], Any],
+    def get_put(self, key: Any, func: Callable[[], Any],
                 max_age: Optional[float] = None) -> Any:
         try:
             return self.get(key)
@@ -127,13 +130,13 @@ class Cache:
         return value
 
     def put_many(self,
-                 data: Mapping[Hashable, Any],
+                 data: Union[Mapping[Any, Any], Iterable[Tuple[Any, Any]]],
                  max_age: Optional[float] = None) -> None:
         self._adapter.put_many(data, max_age)
 
     def get_many(self,
-                 keys: Iterable[Hashable],
-                 default: Any = None) -> Dict[Hashable, Any]:
+                 keys: Iterable[Any],
+                 default: Any = None) -> List[Tuple[Any, Any]]:
         return self._adapter.get_many(keys, default)
 
     @property

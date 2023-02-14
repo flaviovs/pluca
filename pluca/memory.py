@@ -1,6 +1,6 @@
 import time
 from dataclasses import dataclass
-from typing import Dict, Optional, Any, NamedTuple, Hashable
+from typing import Dict, Optional, Any, NamedTuple
 
 import pluca
 
@@ -33,9 +33,9 @@ class CacheAdapter(pluca.CacheAdapter):
     max_entries: Optional[int] = None
 
     def __post_init__(self) -> None:
-        self._storage: Dict[Hashable, _Entry] = {}
+        self._storage: Dict[Any, _Entry] = {}
 
-    def put(self, key: Hashable, data: Any,
+    def put(self, key: Any, data: Any,
             max_age: Optional[float] = None) -> None:
         self._storage[self._map_key(key)] = _Entry(
             data=data,
@@ -60,7 +60,7 @@ class CacheAdapter(pluca.CacheAdapter):
             if nr >= self.max_entries:
                 break
 
-    def get(self, key: Hashable) -> Any:
+    def get(self, key: Any) -> Any:
         skey = self._map_key(key)
         entry = self._storage[skey]
         if not entry.is_fresh:
@@ -68,7 +68,7 @@ class CacheAdapter(pluca.CacheAdapter):
             raise KeyError(key)
         return entry.data
 
-    def remove(self, key: Hashable) -> None:
+    def remove(self, key: Any) -> None:
         skey = self._map_key(key)
         try:
             entry = self._storage[skey]
@@ -81,7 +81,7 @@ class CacheAdapter(pluca.CacheAdapter):
     def flush(self) -> None:
         self._storage = {}
 
-    def has(self, key: Hashable) -> bool:
+    def has(self, key: Any) -> bool:
         return self._map_key(key) in self._storage
 
     def gc(self) -> None:

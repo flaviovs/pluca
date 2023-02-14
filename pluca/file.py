@@ -4,7 +4,7 @@ import time
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Any, BinaryIO, Hashable
+from typing import Optional, Any, BinaryIO
 
 import pluca
 
@@ -66,7 +66,7 @@ class CacheAdapter(pluca.CacheAdapter):
         return (self.cache_dir / self.name
                 / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat')
 
-    def _get_key_filename(self, key: Hashable) -> Path:
+    def _get_key_filename(self, key: Any) -> Path:
         return self._get_filename(self._map_key(key))
 
     def _write(self, filename: Path, data: bytes) -> None:
@@ -80,7 +80,7 @@ class CacheAdapter(pluca.CacheAdapter):
         now = time.time()
         os.utime(filename, times=(now, now + max_age))
 
-    def _get_fresh_key_filename(self, key: Hashable) -> Optional[Path]:
+    def _get_fresh_key_filename(self, key: Any) -> Optional[Path]:
         filename = self._get_key_filename(key)
         return self._get_fresh_filename(filename)
 
@@ -96,7 +96,7 @@ class CacheAdapter(pluca.CacheAdapter):
 
         return filename
 
-    def put(self, key: Hashable, value: Any,
+    def put(self, key: Any, value: Any,
             max_age: Optional[float] = None) -> None:
         data = self._dumps(value)
         filename = self._get_key_filename(key)
@@ -107,14 +107,14 @@ class CacheAdapter(pluca.CacheAdapter):
             self._write(filename, data)
         self._set_max_age(filename, max_age)
 
-    def get(self, key: Hashable) -> Any:
+    def get(self, key: Any) -> Any:
         filename = self._get_fresh_key_filename(key)
         if not filename:
             raise KeyError(key)
         with open(filename, 'rb') as fd:
             return self._load(fd)
 
-    def remove(self, key: Hashable) -> None:
+    def remove(self, key: Any) -> None:
         try:
             self._get_key_filename(key).unlink()
         except FileNotFoundError as ex:
@@ -128,7 +128,7 @@ class CacheAdapter(pluca.CacheAdapter):
             else:
                 warnings.warn(f'Unexpected entry in cache directory: {path}')
 
-    def has(self, key: Hashable) -> bool:
+    def has(self, key: Any) -> bool:
         return self._get_fresh_key_filename(key) is not None
 
     def _gc_dir(self, path: Path) -> None:

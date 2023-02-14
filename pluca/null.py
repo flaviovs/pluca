@@ -1,4 +1,4 @@
-from typing import Optional, Any, Hashable
+from typing import Optional, Any
 
 import pluca
 
@@ -11,16 +11,16 @@ class CacheAdapter(pluca.CacheAdapter):
 
     """
 
-    def put(self, key: Hashable, value: Any,
+    def put(self, key: Any, value: Any,
             max_age: Optional[float] = None) -> None:
         pass
 
-    def get(self, key: Hashable) -> Any:
+    def get(self, key: Any) -> Any:
         raise KeyError(key)
 
     remove = get
 
-    def has(self, key: Hashable) -> bool:
+    def has(self, key: Any) -> bool:
         return False
 
     def flush(self) -> None:

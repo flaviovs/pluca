@@ -56,30 +56,23 @@ class CacheTester(abc.ABC, _BaseClass):
         with self.assertRaises(KeyError):
             c.get(key)
 
-    def test_put_tuple_key(self):
+    def test_put_tuple_key(self) -> None:
         c = self.get_cache()
         key = (uuid.uuid4(), uuid.uuid4())
         value = uuid.uuid4()
         c.put(key, value)
         self.assertEqual(c.get(key), value)
 
-    def test_put_list_key(self):
+    def test_put_list_key(self) -> None:
         c = self.get_cache()
         key = [uuid.uuid4(), uuid.uuid4()]
         value = uuid.uuid4()
         c.put(key, value)
         self.assertEqual(c.get(key), value)
 
-    def test_put_dict_key(self):
+    def test_put_dict_key(self) -> None:
         c = self.get_cache()
         key = {uuid.uuid4(): uuid.uuid4()}
-        value = uuid.uuid4()
-        c.put(key, value)
-        self.assertEqual(c.get(key), value)
-
-    def test_put_set_key(self):
-        c = self.get_cache()
-        key = {uuid.uuid4(), uuid.uuid4()}
         value = uuid.uuid4()
         c.put(key, value)
         self.assertEqual(c.get(key), value)
@@ -135,8 +128,7 @@ class CacheTester(abc.ABC, _BaseClass):
         value2 = uuid.uuid4()
         c.put(key1, value1)
         c.put(key2, value2)
-        res = c.get_many([key1, key2, 'nonexistent'])
-
+        res = dict(c.get_many([key1, key2, 'nonexistent']))
         self.assertIn(key1, res)
         self.assertEqual(res[key1], value1)
         self.assertIn(key2, res)

@@ -86,7 +86,7 @@ time:
         ...
     KeyError: 'see-you'
 
-Cache keys can be any hashable:
+Cache keys can be any object (but see _Caveats_ below):
 
     >>> key = (__name__, True, 'this', 'key', 'has', 'more', 'than', 1, 'value')
     >>> cache.put(key, 'data')
@@ -206,10 +206,7 @@ After the expiry time the calculation is done again:
 Use `get_put()` to conveniently get a value from the cache, or call a
 function to generate it, if it is not cached already:
 
-    >>> try:
-    ...     cache.remove('foo')
-    ... except KeyError:
-    ...     pass
+    >>> cache.flush()
     >>>
     >>> def calculate_foo():
     ...    print('Calculating foo')
@@ -222,21 +219,36 @@ function to generate it, if it is not cached already:
     >>> cache.get_put('foo', calculate_foo)
     'bar'
 
-You can also put and get many entries at once:
+You can also put and get many entries at once. Use a dict to store the respective key/values in the cache:
 
     >>> cache.put_many({'foo': 'bar', 'zee': 'too'})
     >>> cache.get('zee')
     'too'
-    >>> cache.put('pi', 3.1415)
+
+You can also pass an iterable of (key, value) tuples. This might be
+useful for non-hashable keys:
+
+    >>> cache.put_many([(['a', 'b', 'c'], 123), ('pi', 3.1415)])
+    >>> cache.get(['a', 'b', 'c'])
+    123
+
+Use `get_many()` to get many results at once. This method returns a
+list of _(key, value)_ tuples:
+
     >>> cache.get_many(['zee', 'pi'])
-    {'zee': 'too', 'pi': 3.1415}
+    [('zee', 'too'), ('pi', 3.1415)]
 
 Notice that `get_many()` does **not* raise `KeyError` when a key does
 not exist. Instead, the key will not be present on the returned dict:
 
     >>> cache.get_many(['pi', 'not-there'])
-    {'pi': 3.1415}
+    [('pi', 3.1415)]
 
+However, you can pass a default value to `get_many()`. This value will
+be returnes for any non-existing keys:
+
+    >>> cache.get_many(['pi', 'not-there', 'also-not-there'], default='yes')
+    [('pi', 3.1415), ('not-there', 'yes'), ('also-not-there', 'yes')]
 
 The cache adapter object can be accessed in the `adapter` attribute:
 

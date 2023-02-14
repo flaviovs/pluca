@@ -47,7 +47,7 @@ class CacheTester(abc.ABC, _BaseClass):
         cache = self.get_cache()
         self.assertEqual(cache.get('nonexistent', 'default'), 'default')
 
-    def test_get_default_with_none(self) -> None:
+    def test_get_default_none(self) -> None:
         cache = self.get_cache()
         self.assertIsNone(cache.get('nonexistent', None))
 
@@ -157,6 +157,18 @@ class CacheTester(abc.ABC, _BaseClass):
         self.assertEqual(res[key], value)
         self.assertIn('nonexistent', res)
         self.assertEqual(res['nonexistent'], 'default')
+
+    def test_get_many_default_none(self) -> None:
+        cache = self.get_cache()
+        key = uuid.uuid4()
+        value = uuid.uuid4()
+        cache.put(key, value)
+        res = dict(cache.get_many([key, 'nonexistent'], None))
+
+        self.assertIn(key, res)
+        self.assertEqual(res[key], value)
+        self.assertIn('nonexistent', res)
+        self.assertIsNone(res['nonexistent'])
 
     def test_decorator(self) -> None:
         cache = self.get_cache()

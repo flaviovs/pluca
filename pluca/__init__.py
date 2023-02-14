@@ -105,13 +105,13 @@ class Cache(abc.ABC):
             self.put(key, value, max_age)
 
     def get_many(self, keys: Iterable[Any],
-                 default: Any = None) -> List[Tuple[Any, Any]]:
+                 default: Any = ...) -> List[Tuple[Any, Any]]:
         data = []
         for key in keys:
             try:
                 value = self.get(key)
             except KeyError:
-                if default is None:
+                if default is Ellipsis:
                     continue
                 value = default
             data.append((key, value))

@@ -66,4 +66,5 @@ class TestNull(CacheTester, unittest.TestCase):
     test_put_tuple_key = _pass
     test_put_list_key = _pass
     test_put_dict_key = _pass
+    test_get_many_default_none = _pass
     test_decorator = _pass

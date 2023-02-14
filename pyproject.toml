@@ -16,8 +16,34 @@ module = [
        ]
 ignore_missing_imports = true
 
+[tool.pylint.master]
+ignore-paths = ['.git', '.venv']
+ignore-patterns = '^\.#'
+recursive = true
+
+[tool.pylint.basic]
+jobs = 0
+
+# Good variable names which should always be accepted, separated by a comma.
+good-names = [
+	   'ex',
+	   'fd',
+	   'gc',
+	   'nr',
+]
+
+[tool.pylint.variables]
+init-import = true
+
+[tool.pylint.messages_control]
+disable = [
+        "missing-function-docstring",
+        "missing-module-docstring",
+        "missing-class-docstring",
+]
+
 [tool.taskipy.tasks]
 test = "python -m doctest README.md && python -m unittest tests/test_*.py"
-lint = "flake8 && mypy && pylint --jobs=0 pluca"
+lint = "flake8 && mypy && pylint ."
 pre-commit = "task lint"
 pre-push = "task lint && task test"

@@ -15,11 +15,11 @@ class _Entry(NamedTuple):
 
 
 @dataclass
-class CacheAdapter(pluca.CacheAdapter):
-    """Memory cache adapter for pluca.
+class Cache(pluca.Cache):
+    """Memory cache for pluca.
 
-    Store cache entries in the program memory. All entries are lost
-    when the program exits.
+    A cache that stores cache entries in the program memory. All
+    entries are lost when the instance is removed.
 
     By default there is no limit on the number of entries kept in the
     cache. You can change that by specifying a maximum number of
@@ -35,10 +35,10 @@ class CacheAdapter(pluca.CacheAdapter):
     def __post_init__(self) -> None:
         self._storage: Dict[Any, _Entry] = {}
 
-    def put(self, key: Any, data: Any,
-            max_age: Optional[float] = None) -> None:
-        self._storage[self._map_key(key)] = _Entry(
-            data=data,
+    def _put(self, key: Any, value: Any,
+             max_age: Optional[float] = None) -> None:
+        self._storage[key] = _Entry(
+            data=value,
             expire=(time.time() + max_age if max_age else float('inf')))
         if (self.max_entries is not None
                 and len(self._storage) > self.max_entries):
@@ -54,39 +54,30 @@ class CacheAdapter(pluca.CacheAdapter):
                        reverse=True)
         self._storage = {}
         nr = 0
-        for (k, item) in items:
-            self._storage[k] = item
+        for (key, item) in items:
+            self._storage[key] = item
             nr += 1
             if nr >= self.max_entries:
                 break
 
-    def get(self, key: Any) -> Any:
-        skey = self._map_key(key)
-        entry = self._storage[skey]
+    def _get(self, key: Any) -> Any:
+        entry = self._storage[key]
         if not entry.is_fresh:
-            del self._storage[skey]
+            del self._storage[key]
             raise KeyError(key)
         return entry.data
 
-    def remove(self, key: Any) -> None:
-        skey = self._map_key(key)
-        try:
-            entry = self._storage[skey]
-        except KeyError as ex:
-            raise KeyError(key) from ex
-        del self._storage[skey]
+    def _remove(self, key: Any) -> None:
+        entry = self._storage[key]
+        del self._storage[key]
         if not entry.is_fresh:
             raise KeyError(key)
 
     def flush(self) -> None:
         self._storage = {}
 
-    def has(self, key: Any) -> bool:
-        return self._map_key(key) in self._storage
+    def _has(self, key: Any) -> bool:
+        return key in self._storage
 
     def gc(self) -> None:
         self._storage = {k: e for k, e in self._storage.items() if e.is_fresh}
-
-
-def create(max_entries: Optional[int] = None) -> pluca.Cache:
-    return pluca.Cache(CacheAdapter(max_entries=max_entries))

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import pluca
-from pluca.file import create
+import pluca.file
 from pluca.test import CacheTester
 
 
@@ -24,7 +24,7 @@ class TestFile(CacheTester, unittest.TestCase):
             self._dir = None
 
     def get_cache(self) -> pluca.Cache:
-        return create(name='test', cache_dir=self._dir)
+        return pluca.file.Cache(name='test', cache_dir=self._dir)
 
     def test_flush_empties_dir(self) -> None:
         cache = self.get_cache()

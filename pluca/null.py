@@ -3,31 +3,29 @@ from typing import Optional, Any
 import pluca
 
 
-class CacheAdapter(pluca.CacheAdapter):
-    """Null cache adapter for pluca.
+class Cache(pluca.Cache):
+    """Null cache for pluca.
 
-    This is a cache adapter that does not persist entries: you can
-    "store" data in it, but all "get" operations will fail.
+    This is a cache that does not persist entries: you can "store"
+    data in it, but all "get" operations will fail.
 
     """
 
-    def put(self, key: Any, value: Any,
-            max_age: Optional[float] = None) -> None:
+    def _put(self, key: Any, value: Any,
+             max_age: Optional[float] = None) -> None:
         pass
 
-    def get(self, key: Any) -> Any:
+    def _raise_keyerror(self, key: Any) -> Any:
         raise KeyError(key)
 
-    remove = get
+    _get = _raise_keyerror
+    _remove = _raise_keyerror
 
-    def has(self, key: Any) -> bool:
+    def _has(self, _key: Any) -> bool:
         return False
 
-    def flush(self) -> None:
+    def _pass(self) -> None:
         pass
 
-    gc = flush
-
-
-def create() -> pluca.Cache:
-    return pluca.Cache(CacheAdapter())
+    flush = _pass
+    gc = _pass

@@ -14,8 +14,8 @@ _DIR_PREFIX = 'cache-'
 
 
 @dataclass
-class CacheAdapter(pluca.CacheAdapter):
-    """File cache adapter for pluca.
+class Cache(pluca.Cache):
+    """File cache for pluca.
 
     Store cache entries on the file system.
 
@@ -66,9 +66,6 @@ class CacheAdapter(pluca.CacheAdapter):
         return (self.cache_dir / self.name
                 / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat')
 
-    def _get_key_filename(self, key: Any) -> Path:
-        return self._get_filename(self._map_key(key))
-
     def _write(self, filename: Path, data: bytes) -> None:
         with open(filename, 'wb') as fd:
             fd.write(data)
@@ -81,7 +78,7 @@ class CacheAdapter(pluca.CacheAdapter):
         os.utime(filename, times=(now, now + max_age))
 
     def _get_fresh_key_filename(self, key: Any) -> Optional[Path]:
-        filename = self._get_key_filename(key)
+        filename = self._get_filename(key)
         return self._get_fresh_filename(filename)
 
     def _get_fresh_filename(self, filename: Path) -> Optional[Path]:
@@ -96,10 +93,10 @@ class CacheAdapter(pluca.CacheAdapter):
 
         return filename
 
-    def put(self, key: Any, value: Any,
-            max_age: Optional[float] = None) -> None:
+    def _put(self, key: Any, value: Any,
+             max_age: Optional[float] = None) -> None:
         data = self._dumps(value)
-        filename = self._get_key_filename(key)
+        filename = self._get_filename(key)
         try:
             self._write(filename, data)
         except FileNotFoundError:
@@ -107,16 +104,16 @@ class CacheAdapter(pluca.CacheAdapter):
             self._write(filename, data)
         self._set_max_age(filename, max_age)
 
-    def get(self, key: Any) -> Any:
+    def _get(self, key: Any) -> Any:
         filename = self._get_fresh_key_filename(key)
         if not filename:
             raise KeyError(key)
         with open(filename, 'rb') as fd:
             return self._load(fd)
 
-    def remove(self, key: Any) -> None:
+    def _remove(self, key: Any) -> None:
         try:
-            self._get_key_filename(key).unlink()
+            self._get_filename(key).unlink()
         except FileNotFoundError as ex:
             raise KeyError(key) from ex
 
@@ -128,7 +125,7 @@ class CacheAdapter(pluca.CacheAdapter):
             else:
                 warnings.warn(f'Unexpected entry in cache directory: {path}')
 
-    def has(self, key: Any) -> bool:
+    def _has(self, key: Any) -> bool:
         return self._get_fresh_key_filename(key) is not None
 
     def _gc_dir(self, path: Path) -> None:
@@ -141,8 +138,3 @@ class CacheAdapter(pluca.CacheAdapter):
     def gc(self) -> None:
         assert self.cache_dir is not None
         self._gc_dir(self.cache_dir / self.name)
-
-
-def create(name: str = 'pluca',
-           cache_dir: Optional[Path] = None) -> pluca.Cache:
-    return pluca.Cache(CacheAdapter(name=name, cache_dir=cache_dir))

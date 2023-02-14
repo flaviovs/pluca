@@ -3,8 +3,8 @@ Plugable cache architecture for Python
 
 *pluca* is a plugable cache architecture for Python 3
 applications. The package provides an unified interface to several
-cache adapters, which allows an application to switch cache back-ends
-on an as-needed basis with minimal changes.
+cache implementations, which allows an application to switch cache
+back-ends on an as-needed basis with minimal changes.
 
 Features
 --------
@@ -12,25 +12,25 @@ Features
   `Cache` object and pass it around -- client code just access the
   cache without having to know any of the details about caching
   back-ends, expiration logic, etc.
-- Easy interface - writing a *pluca* adapter for a new caching back-end
+- Easy interface - writing a *pluca* cache for a new caching back-end
   is very straightforward
 - It is fast - the library is developed with performance in mind
-- It works out-of-box - a *file* adapter is provided that can be used
-  for file system caching
+- It works out-of-box - a file system cache is provided that can be
+  used out-of-box
 - No batteries needed - *pluca* has no external dependencies
 
 How to use
 ----------
 
-First import the cache adapter factory:
+First import the cache module:
 
-    >>> from pluca.file import create  # Let's user the file system adapter.
+    >>> import pluca.file  # Use a file system cache.
 
 Now create the cache object:
 
-    >>> cache = create()
+    >>> cache = pluca.file.Cache()
 
-Put something on the cache:
+Store _3.1415_ in the cache using _pi_ as key:
 
     >>> cache.put('pi', 3.1415)
 
@@ -59,7 +59,6 @@ Use `remove()` to delete entries from the cache:
     Traceback (most recent call last):
         ...
     KeyError: 'foo'
-
 
 To test if a entry exists, use `has()`:
 
@@ -146,7 +145,7 @@ store the data anywhere — see `help(pluca.null.CacheAdapter)` for more
 info):
 
     >>> import pluca.null
-    >>> null_cache = pluca.null.create()
+    >>> null_cache = pluca.null.Cache()
     >>>
     >>> cached_factorial(null_cache, 10)
     CACHE MISS - calculating 10!
@@ -250,12 +249,6 @@ be returnes for any non-existing keys:
     >>> cache.get_many(['pi', 'not-there', 'also-not-there'], default='yes')
     [('pi', 3.1415), ('not-there', 'yes'), ('also-not-there', 'yes')]
 
-The cache adapter object can be accessed in the `adapter` attribute:
-
-     >>> type(cache.adapter)
-     <class 'pluca.file.CacheAdapter'>
-     >>> cache.adapter # doctest: +ELLIPSIS
-     CacheAdapter(name=..., cache_dir=...)
 
 ## Garbage collection.
 

@@ -1,7 +1,7 @@
 import abc
 from functools import wraps, partial
 from typing import (Optional, Any, Iterable, Mapping, Callable,
-                    List, Tuple, NoReturn, Union)
+                    List, Tuple, Union)
 
 __version__ = '0.2.0'
 
@@ -10,7 +10,40 @@ class CacheError(Exception):
     pass
 
 
-class CacheAdapter(abc.ABC):
+class Cache(abc.ABC):
+    """Pluggable Cache Architecture (pluca) cache.
+
+    This is the base pluca cache class. It is inherited to implement
+    other cache back-ends. Use `help(MODULE.CLASS)` to get help about
+    `MODULE.CLASS`.
+    """
+
+    def put(self, key: Any, value: Any,
+            max_age: Optional[float] = None) -> None:
+        self._put(self._map_key(key), value, max_age)
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        try:
+            return self._get(self._map_key(key))
+        except KeyError as ex:
+            if default is None:
+                raise KeyError(key) from ex
+        return default
+
+    def gc(self) -> None:
+        raise NotImplementedError(f'{self.__class__.__qualname__} does not '
+                                  'support garbage collection')
+
+    def get_put(self, key: Any, func: Callable[[], Any],
+                max_age: Optional[float] = None) -> Any:
+        mkey = self._map_key(key)
+        try:
+            return self._get(mkey)
+        except KeyError:
+            pass
+        value = func()
+        self._put(mkey, value, max_age)
+        return value
 
     def _dumps(self, obj: Any) -> bytes:
         import pickle  # pylint: disable=import-outside-toplevel
@@ -27,37 +60,46 @@ class CacheAdapter(abc.ABC):
         return algo.hexdigest()
 
     @abc.abstractmethod
-    def put(self, key: Any, value: Any,
-            max_age: Optional[float] = None) -> None:
+    def _put(self, key: Any, value: Any,
+             max_age: Optional[float] = None) -> None:
         pass
 
     @abc.abstractmethod
-    def get(self, key: Any) -> Any:
+    def _get(self, key: Any) -> Any:
         pass
 
-    def has(self, key: Any) -> bool:
+    @abc.abstractmethod
+    def _remove(self, key: Any) -> None:
+        pass
+
+    def remove(self, key: Any) -> None:
         try:
-            self.get(key)
+            self._remove(self._map_key(key))
+        except KeyError as ex:
+            raise KeyError(key) from ex
+
+    @abc.abstractmethod
+    def flush(self) -> None:
+        pass
+
+    def _has(self, key: Any) -> bool:
+        try:
+            self._get(key)
             return True
         except KeyError:
             pass
         return False
 
-    @abc.abstractmethod
-    def remove(self, key: Any) -> None:
-        pass
-
-    @abc.abstractmethod
-    def flush(self) -> None:
-        pass
+    def has(self, key: Any) -> bool:
+        return self._has(self._map_key(key))
 
     def put_many(self,
                  data: Union[Mapping[Any, Any], Iterable[Tuple[Any, Any]]],
                  max_age: Optional[float] = None) -> None:
         if isinstance(data, Mapping):
             data = data.items()
-        for (k, v) in data:
-            self.put(k, v, max_age)
+        for (key, value) in data:
+            self.put(key, value, max_age)
 
     def get_many(self, keys: Iterable[Any],
                  default: Any = None) -> List[Tuple[Any, Any]]:
@@ -71,77 +113,6 @@ class CacheAdapter(abc.ABC):
                 value = default
             data.append((key, value))
         return data
-
-    def gc(self) -> Optional[NoReturn]:
-        raise NotImplementedError(f'{self.__class__.__qualname__} does not '
-                                  'support garbage collection')
-
-
-class Cache:
-    """Pluggable Cache Architecture (pluca) cache interface.
-
-    This is the pluca cache adapter interface. It contains all the
-    logic to talk to specific cache adapters.
-
-    Usually cache adapter modules provide a factory function (usually
-    called `create()`) so that you do not need to instantiate `Cache`
-    objects directly. For example, when using the file adapter, you
-    can call `pluca.file.create(...)` to create a ready-to-use cache
-    object using the file adapter.
-
-    """
-
-    def __init__(self, adapter: CacheAdapter):
-        super().__init__()
-        self._adapter = adapter
-
-    def flush(self) -> None:
-        self._adapter.flush()
-
-    def has(self, key: Any) -> bool:
-        return self._adapter.has(key)
-
-    def put(self, key: Any, value: Any,
-            max_age: Optional[float] = None) -> None:
-        self._adapter.put(key, value, max_age)
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        try:
-            return self._adapter.get(key)
-        except KeyError:
-            if default is None:
-                raise
-        return default
-
-    def remove(self, key: Any) -> None:
-        self._adapter.remove(key)
-
-    def gc(self) -> None:
-        self._adapter.gc()
-
-    def get_put(self, key: Any, func: Callable[[], Any],
-                max_age: Optional[float] = None) -> Any:
-        try:
-            return self.get(key)
-        except KeyError:
-            pass
-        value = func()
-        self.put(key, value, max_age)
-        return value
-
-    def put_many(self,
-                 data: Union[Mapping[Any, Any], Iterable[Tuple[Any, Any]]],
-                 max_age: Optional[float] = None) -> None:
-        self._adapter.put_many(data, max_age)
-
-    def get_many(self,
-                 keys: Iterable[Any],
-                 default: Any = None) -> List[Tuple[Any, Any]]:
-        return self._adapter.get_many(keys, default)
-
-    @property
-    def adapter(self) -> CacheAdapter:
-        return self._adapter
 
     def __call__(self, func: Optional[Callable[..., Any]] = None,
                  max_age: Optional[int] = None) -> Callable[..., Any]:

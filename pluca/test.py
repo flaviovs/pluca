@@ -53,8 +53,9 @@ class CacheTester(abc.ABC, _BaseClass):
         value = uuid.uuid4()
         cache.put(key, value, 1)  # Expires in 1 second.
         time.sleep(1)
-        with self.assertRaises(KeyError):
+        with self.assertRaises(KeyError) as ctx:
             cache.get(key)
+        self.assertEqual(ctx.exception.args, (key,))
 
     def test_put_tuple_key(self) -> None:
         cache = self.get_cache()
@@ -87,8 +88,9 @@ class CacheTester(abc.ABC, _BaseClass):
 
     def test_remove_nonexistent(self) -> None:
         cache = self.get_cache()
-        with self.assertRaises(KeyError):
+        with self.assertRaises(KeyError) as ctx:
             cache.remove('nonexistent')
+        self.assertEqual(ctx.exception.args, ('nonexistent',))
 
     def test_flush(self) -> None:
         cache = self.get_cache()
@@ -146,3 +148,20 @@ class CacheTester(abc.ABC, _BaseClass):
         self.assertEqual(res[key], value)
         self.assertIn('nonexistent', res)
         self.assertEqual(res['nonexistent'], 'default')
+
+    def test_decorator(self) -> None:
+        cache = self.get_cache()
+
+        calls = 0
+
+        @cache
+        def func(val1: int, val2: int) -> int:
+            nonlocal calls
+            calls += 1
+            return val1 + val2
+
+        self.assertEqual(func(1, 2), 3)
+        self.assertEqual(func(3, 4), 7)
+        self.assertEqual(func(1, 2), 3)
+
+        self.assertEqual(calls, 2)

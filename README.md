@@ -494,6 +494,7 @@ These are the cache back-ends that come with the _pluca_ package:
 - *memory* - a memory-only cache that exists for the duration of the
   cache instance
 - *null* - the null cache - `get()` always raises _KeyError_
+- *sql* - store cache entries on databases
 
 To obtain help about those cache back-ends, run
 `help(pluca.MODULE.Cache)`, where _MODULE_ is one of the module names

@@ -9,7 +9,7 @@ back-ends on an as-needed basis with minimal changes.
 Features
 --------
 - Unified cache interface - your application can just instantiate a
-  `Cache` object and pass it around -- client code just access the
+  `Cache` object and pass it around — client code just access the
   cache without having to know any of the details about caching
   back-ends, expiration logic, etc.
 - Easy interface - writing a *pluca* cache for a new caching back-end
@@ -68,7 +68,9 @@ To test if a entry exists, use `has()`:
     >>> cache.has('that')
     False
 
-You can provide a default value for non-existent/expired entries:
+You can provide a default value for when the key does not exist or has
+expired. The method will not raise _KeyError_ in this case, it will
+return the default value instead.
 
     >>> cache.get('notthere', 12345)
     12345
@@ -141,8 +143,7 @@ Subsequent calls should get the results from the cache:
     3628800
 
 Now let's switch to the “null” back-end (the “null” back-end does not
-store the data anywhere — see `help(pluca.null.CacheAdapter)` for more
-info):
+store the data anywhere — see `help(pluca.null.Cache)` for more info):
 
     >>> import pluca.null
     >>> null_cache = pluca.null.Cache()
@@ -218,14 +219,15 @@ function to generate it, if it is not cached already:
     >>> cache.get_put('foo', calculate_foo)
     'bar'
 
-You can also put and get many entries at once. Use a dict to store the respective key/values in the cache:
+You can add get many entries to the cache at once by calling
+`put_many()`:
 
     >>> cache.put_many({'foo': 'bar', 'zee': 'too'})
     >>> cache.get('zee')
     'too'
 
-You can also pass an iterable of (key, value) tuples. This might be
-useful for non-hashable keys:
+You can also pass an iterable of _(key, value)_ tuples. This is is
+useful for caching with non-hashable keys:
 
     >>> cache.put_many([(['a', 'b', 'c'], 123), ('pi', 3.1415)])
     >>> cache.get(['a', 'b', 'c'])
@@ -237,8 +239,9 @@ list of _(key, value)_ tuples:
     >>> cache.get_many(['zee', 'pi'])
     [('zee', 'too'), ('pi', 3.1415)]
 
-Notice that `get_many()` does **not* raise `KeyError` when a key does
-not exist. Instead, the key will not be present on the returned dict:
+Notice that `get_many()` does **not** raise _KeyError_ when a key is
+not found or has expired. Instead, the key will not be present in the
+returned dict:
 
     >>> cache.get_many(['pi', 'not-there'])
     [('pi', 3.1415)]
@@ -269,12 +272,11 @@ application to benefit from caching in a very flexible way. In one
 hand, it allows libraries that would benefit from caching to use
 _pluca_ even if the calling applications doesn’t support it. On the
 other hand, an application that does support _pluca_ can customize
-caches for specific libraries without using any extra API.
+caches for specific libraries without any extra API.
 
 In the sections below you will see how the Global Cache API works both
 from a library and a application perspective, but before it is
-important to understand how the Global Cache API organizes cache
-objects.
+important to understand how this API organizes cache objects.
 
 
 ## The cache object tree
@@ -293,7 +295,7 @@ way [Python’s logging
 facility](https://docs.python.org/3/library/logging.html) organizes
 loggers.
 
-For example, let’s say you configure three cache objects:
+As a quick example, let’s say you configure three cache objects:
 
 - “” (the root cache) is a file cache
 - “pkg“ is a memory cache
@@ -303,7 +305,8 @@ Then a look up of “pkg.mod” would return the null cache. If you look
 up “pkg.foobar”, then the memory cache would be returned, because
 although there’s no cache at “pkg.foobar”, they share the common
 prefix “pkg“. Lastly, if you look up “another.module” then you’ll get
-the root cache, because this name is nowhere found on the tree.
+the root cache, because neither the name nor any of its ancestors
+exist on the cache tree.
 
 
 ## Using the Global Cache API in libraries
@@ -327,7 +330,7 @@ That’s it. `cache` is a ready-to-use _pluca_ cache object:
 
     >>> result = cache.get('my-very-expensive-calculation', None)
 
-Notice in this example that we ask for a cache named `__name__`, which
+Notice that in this example we ask for a cache named `__name__`, which
 is the absolute name of your module or package. By matching modules
 and packages hierarchically, the API allows for fine-grained cache
 configuration without any coupling between applications and libraries.
@@ -353,13 +356,13 @@ You can also customize the cache object:
 
 To configure additional caches, use `pluca.cache.add()`:
 
-    >>> pluca.cache.add('mod', 'memory')
+    >>> pluca.cache.add('mod', 'memory', max_entries=100)
     >>> pluca.cache.add('pkg.foo', 'null')
 
-This adds two caches to the Global Cache API — one at “mod“ and
-another at “pkg.foo“. Now in the “pkg.foo“ module, the call
-`get_cache(__name__)` will return a “null” cache, whereas the same
-call on “mod“ will return a memory cache.
+This adds two caches — one at “mod“ and another at “pkg.foo“. Now, in
+the “pkg.foo“ module, the call `get_cache(__name__)` will return a
+“null” cache, whereas the same call on the “mod“ module will return a
+memory cache.
 
     >>> # In mod.py
     >>> cache = pluca.cache.get_cache(__name__)
@@ -384,15 +387,16 @@ add(node: str, cls: str, reuse: bool = True, **kwargs: Any)
 ```
 
 Here, `node` is the cache node name. `cls` indicates the cache class
-you want to instantiate for that node. `cls` must be a fully-qualified
-class name. For example `mycustomcache.Cache`. If `cls` is just a
-simple string with no “.”, it is assumed to be a cache class from the
-the standard _pluca_ package — for example, `memory` is the same as
-`pluca.memory.Cache`.
+you want to instantiate for that node.
+
+The `cls` parameter must be a fully-qualified class name (for example,
+`mycustomcache.Cache`). If `cls` is a string with no “.” (dot) in it,
+i is assumed to be a cache class from the the standard _pluca_ package
+— for example, `memory` is the same as `pluca.memory.Cache`.
 
 By default, caches will reuse previously created instances with the
-same `cls` name and arguments. For example, the two calls above return
-the same cache object:
+same `cls` name and arguments. For example, the two `get_cache()`
+calls below return the same cache object:
 
     >>> pluca.cache.add('c1', 'file')
     >>> pluca.cache.add('c2', 'file')
@@ -405,8 +409,8 @@ To prevent this from happening, pass _False_ on the `reuse` parameter:
     >>> pluca.cache.get_cache('c2') is pluca.cache.get_cache('c3')
     False
 
-The remaining arguments to the `add()` call are passed unchanged to
-the cache class constructor.
+The remaining arguments to the `add()` function are passed unchanged
+to the cache class constructor.
 
     >>> pluca.cache.add('c4', 'file', name='c4', cache_dir='/tmp')
     >>> pluca.cache.get_cache('c4')
@@ -441,7 +445,7 @@ To remove cache entries, call `pluca.cache.remove()`:
 
     >>> pluca.cache.remove('mod')
 
-Notice that removing a cache does not remove all its children:
+Notice that removing a cache does not remove its children:
 
     >>> pluca.cache.add('a.b', 'file')
     >>> pluca.cache.add('a.b.c', 'file')
@@ -478,7 +482,11 @@ These are the cache back-ends that come with the _pluca_ package:
 - *file* - store cache entries on the file system
 - *memory* - a memory-only cache that exists for the duration of the
   cache instance
-- *null* - the null cache - `get()` always raises `KeyError`
+- *null* - the null cache - `get()` always raises _KeyError_
+
+To obtain help about those cache back-ends, run
+`help(pluca.MODULE.Cache)`, where _MODULE_ is one of the module names
+above.
 
 
 Issues? Bugs? Suggestions?

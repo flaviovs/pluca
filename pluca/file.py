@@ -14,7 +14,7 @@ _DIR_PREFIX = 'cache-'
 
 
 @dataclass
-class Cache(pluca.Cache):
+class FileCache(pluca.Cache):
     """File cache for pluca.
 
     Store cache entries on the file system.
@@ -138,3 +138,6 @@ class Cache(pluca.Cache):
     def gc(self) -> None:
         assert self.cache_dir is not None
         self._gc_dir(self.cache_dir / self.name)
+
+
+Cache = FileCache

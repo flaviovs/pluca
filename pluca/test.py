@@ -47,6 +47,10 @@ class CacheTester(abc.ABC, _BaseClass):
         cache = self.get_cache()
         self.assertEqual(cache.get('nonexistent', 'default'), 'default')
 
+    def test_get_default_with_none(self) -> None:
+        cache = self.get_cache()
+        self.assertIsNone(cache.get('nonexistent', None))
+
     def test_put_max_age(self) -> None:
         cache = self.get_cache()
         key = uuid.uuid4()

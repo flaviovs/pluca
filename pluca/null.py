@@ -3,7 +3,7 @@ from typing import Optional, Any
 import pluca
 
 
-class Cache(pluca.Cache):
+class NullCache(pluca.Cache):
     """Null cache for pluca.
 
     This is a cache that does not persist entries: you can "store"
@@ -29,3 +29,6 @@ class Cache(pluca.Cache):
 
     flush = _pass
     gc = _pass
+
+
+Cache = NullCache

@@ -22,11 +22,11 @@ class Cache(abc.ABC):
             max_age: Optional[float] = None) -> None:
         self._put(self._map_key(key), value, max_age)
 
-    def get(self, key: Any, default: Any = None) -> Any:
+    def get(self, key: Any, default: Any = ...) -> Any:
         try:
             return self._get(self._map_key(key))
         except KeyError as ex:
-            if default is None:
+            if default is Ellipsis:
                 raise KeyError(key) from ex
         return default
 

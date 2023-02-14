@@ -1,41 +1,100 @@
 import importlib
-from typing import Union, Callable, Dict, Optional
+import logging
+from typing import Dict, Tuple, Optional, Mapping, Any
 
 from pluca import Cache
 
-_CACHES: Dict[str, Cache] = {}
+_caches: Dict[Tuple[str, ...], Cache] = {}
+
+_nodes: Dict[Tuple[str, str], Cache] = {}
+
+logger = logging.getLogger(__name__)
+
+_DEFAULT_BACKEND = 'file'
 
 
-def add(cache: str, factory: Union[str, Callable], *args, **kwargs) -> None:
-    if cache in _CACHES:
-        raise ValueError(f'A cache named {cache!r} already exists')
+def add(node: str, cls: str, reuse: bool = True, **kwargs: Any) -> None:
 
-    if isinstance(factory, str):
-        parts = factory.rsplit('.', 1)
-        if len(parts) < 2:
-            raise ValueError('Factory callable must be MODULE.FUNC')
-        mod = importlib.import_module(parts[0])
-        factory = getattr(mod, parts[1])
+    tnode = tuple(node.split('.'))
+    if tnode in _caches:
+        raise ValueError(f'A cache named {node!r} already exists')
 
-    assert callable(factory)
-    _CACHES[cache] = factory(*args, **kwargs)
+    if '.' not in cls:
+        cls = f'pluca.{cls}.Cache'
 
+    node_key = (cls, repr(tuple(kwargs.items())))
 
-def get(cache: Optional[str] = None) -> Cache:
+    cache: Optional[Cache] = _nodes.get(node_key, None) if reuse else None
+
     if not cache:
-        cache = 'default'
-        if cache not in _CACHES:
-            basic_config()
-    return _CACHES[cache]
+        (module, class_) = cls.rsplit('.', 1)
+        mod = importlib.import_module(module)
+        factory = getattr(mod, class_)
+        cache = factory(**kwargs)
+        assert cache is not None
+
+    if node and ('',) not in _caches:
+        # No root cache.
+        basic_config()
+
+    _nodes[node_key] = cache
+    _caches[tnode] = cache
+
+    logger.debug('Set up %r %s', cache,
+                 f'for {node!r}' if node else 'as root cache')
 
 
-def remove(cache: str) -> None:
-    del _CACHES[cache]
+def get_cache(node: str) -> Cache:
+    if not _caches:
+        basic_config()
+
+    tnode = tuple(node.split('.'))
+    nr = len(tnode)
+
+    while nr:
+        try:
+            return _caches[tnode[:nr]]
+        except KeyError:
+            pass
+        nr -= 1
+
+    return _caches[('',)]
+
+
+def get_child(parent: str, child: str) -> Cache:
+    return get_cache(f'{parent}.{child}')
+
+
+def remove(node: str) -> None:
+    try:
+        del _caches[tuple(node.split('.'))]
+    except KeyError as ex:
+        raise KeyError(node) from ex
+    logger.debug('Removed cache for %r', node)
 
 
 def remove_all() -> None:
-    _CACHES.clear()
+    _caches.clear()
+    _nodes.clear()
+    logger.debug('All caches removed')
 
 
-def basic_config(factory: str = 'pluca.file.create', *args, **kwargs) -> None:
-    add('default', factory, *args, **kwargs)
+def basic_config(cls: str = _DEFAULT_BACKEND, **kwargs: Any) -> None:
+    remove_all()
+    add('', cls=cls, **kwargs)
+
+
+def dict_config(config: Mapping[str, Any]) -> None:
+    config = dict(config)
+
+    caches = config.pop('caches', {})
+
+    remove_all()
+
+    cls = config.pop('class', _DEFAULT_BACKEND)
+    add('', cls=cls, **config)
+
+    for node, cfg in caches.items():
+        cfg = dict(cfg)
+        cls = cfg.pop('class', _DEFAULT_BACKEND)
+        add(node, cls=cls, **cfg)

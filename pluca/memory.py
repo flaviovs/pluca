@@ -15,7 +15,7 @@ class _Entry(NamedTuple):
 
 
 @dataclass
-class Cache(pluca.Cache):
+class MemoryCache(pluca.Cache):
     """Memory cache for pluca.
 
     A cache that stores cache entries in the program memory. All
@@ -81,3 +81,6 @@ class Cache(pluca.Cache):
 
     def gc(self) -> None:
         self._storage = {k: e for k, e in self._storage.items() if e.is_fresh}
+
+
+Cache = MemoryCache

@@ -98,3 +98,25 @@ def dict_config(config: Mapping[str, Any]) -> None:
         cfg = dict(cfg)
         cls = cfg.pop('class', _DEFAULT_BACKEND)
         add(node, cls=cls, **cfg)
+
+
+def file_config(filename: str, encoding: Optional[str] = None) -> None:
+    import configparser  # pylint: disable=import-outside-toplevel
+
+    config = configparser.ConfigParser()
+    config.read(filename, encoding=encoding)
+
+    remove_all()
+
+    try:
+        section = dict(config['__root__'])
+    except KeyError:
+        section = {}
+
+    cls = section.pop('class', _DEFAULT_BACKEND)
+    add('', cls=cls, reuse=False, **section)
+
+    for name in filter(lambda x: x != '__root__', config.sections()):
+        cfg = config[name]
+        cls = cfg.pop('class', _DEFAULT_BACKEND)
+        add(name, cls=cls, **cfg)

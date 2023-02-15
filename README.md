@@ -437,6 +437,33 @@ You can also configure the API using a dict-like object using
     >>> pluca.cache.get_cache('mod')  # doctest: +ELLIPSIS
     <pluca.null.NullCache object at 0x...>
 
+A facility to set up the API using a configuration file is also
+provided. Heres an example:
+
+    >>> from tempfile import NamedTemporaryFile
+    >>>
+    >>> temp = NamedTemporaryFile(mode='w+', suffix='.ini')
+    >>> n = temp.write('''
+    ...
+    ...     [__root__]
+    ...     class = memory
+    ...     max_entries = 10
+    ...
+    ...     [mod]
+    ...     class = null
+    ...
+    ...     [pkg.mod]
+    ...     class = file
+    ...     name = pkg_mod
+    ...     cache_dir = /tmp
+    ...
+    ... ''')
+    >>> temp.flush()
+    >>>
+    >>> pluca.cache.file_config(temp.name)
+    >>>
+    >>> pluca.cache.get_cache('mod')  # doctest: +ELLIPSIS
+    <pluca.null.NullCache object at 0x...>
 
 
 ### Removing caches

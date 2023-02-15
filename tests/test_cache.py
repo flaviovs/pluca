@@ -1,5 +1,6 @@
 import sys
 import unittest
+import tempfile
 
 import pluca.file
 import pluca.null
@@ -155,3 +156,34 @@ class TestCache(unittest.TestCase):
         plc.dict_config({'class': 'null'})
         cache = plc.get_cache('foo')
         self.assertIsInstance(cache, pluca.null.Cache)
+
+    def test_file_config(self) -> None:
+        # pylint: disable-next=consider-using-with
+        temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
+        temp.write('''
+        [__root__]
+        class = file
+
+        [mod]
+        class = null
+
+        [pkg.mod]
+        class = memory
+        max_entries = 100
+        ''')
+        temp.flush()
+        temp.seek(0)
+
+        plc.file_config(temp.name)
+
+        cache = plc.get_cache('')
+        self.assertIsInstance(cache, pluca.file.Cache)
+
+        cache = plc.get_cache('non-existent')
+        self.assertIsInstance(cache, pluca.file.Cache)
+
+        cache = plc.get_cache('mod')
+        self.assertIsInstance(cache, pluca.null.Cache)
+
+        cache = plc.get_cache('pkg.mod')
+        self.assertIsInstance(cache, pluca.memory.Cache)

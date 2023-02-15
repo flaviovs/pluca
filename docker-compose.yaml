@@ -1,0 +1,125 @@
+version: '3'
+
+x-python-test: &python-test
+  working_dir: /app
+  command: sh etc/container-test.sh
+  volumes:
+    - .:/app
+    - pip-cache:/home/test/.cache/pip
+  profiles:
+    - tests
+
+x-postgres-env:
+  - &pghost
+    PGHOST=postgres
+  - &pguser
+    PGUSER=postgres
+
+x-mariadb-env:
+  - &mariadbhost
+    MYSQL_HOST=mariadb
+  - &mariadbuser
+    MYSQL_USER=root
+  - &mariadbpassword
+    MYSQL_PASSWORD=test
+
+services:
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    profiles:
+      - services
+
+  mariadb:
+    image: mariadb/server
+    environment:
+      - MARIADB_USER=test
+      - MARIADB_PASSWORD=test
+      - MARIADB_ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    profiles:
+      - services
+
+  python-3.7:
+    <<: *python-test
+    image: pluca-test:3.7
+    build:
+      context: ./etc/docker
+      args:
+        PYTHON_VERSION: '3.7'
+    environment:
+      - PGDATABASE=python3_7
+      - MYSQL_DATABASE=python3_7
+      - *pghost
+      - *pguser
+      - *mariadbhost
+
+  python-3.8:
+    <<: *python-test
+    image: pluca-test:3.8
+    build:
+      context: ./etc/docker
+      args:
+        PYTHON_VERSION: '3.8'
+    environment:
+      - PGDATABASE=python3_8
+      - MYSQL_DATABASE=python3_8
+      - *pghost
+      - *pguser
+      - *mariadbhost
+
+
+  python-3.9:
+    <<: *python-test
+    image: pluca-test:3.9
+    build:
+      context: ./etc/docker
+      args:
+        PYTHON_VERSION: '3.9'
+    environment:
+      - PGDATABASE=python3_9
+      - MYSQL_DATABASE=python3_9
+      - *pghost
+      - *pguser
+      - *mariadbhost
+
+  python-3.10:
+    <<: *python-test
+    image: pluca-test:3.10
+    build:
+      context: ./etc/docker
+      args:
+        PYTHON_VERSION: '3.10'
+    environment:
+      - PGDATABASE=python3_10
+      - MYSQL_DATABASE=python3_10
+      - *pghost
+      - *pguser
+      - *mariadbhost
+      - *mariadbuser
+      - *mariadbpassword
+
+  python-3.11:
+    <<: *python-test
+    image: pluca-test:3.11
+    build:
+      context: ./etc/docker
+      args:
+        PYTHON_VERSION: '3.11'
+    environment:
+      - PGDATABASE=python3_11
+      - MYSQL_DATABASE=python3_11
+      - *pghost
+      - *pguser
+      - *mariadbhost
+      - *mariadbuser
+      - *mariadbpassword
+
+volumes:
+  pip-cache:
+  mariadb_data:
+  postgres_data:

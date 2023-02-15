@@ -490,6 +490,7 @@ Included back-ends
 
 These are the cache back-ends that come with the _pluca_ package:
 
+- *dbm* - store cache entries usim DBM “databases”
 - *file* - store cache entries on the file system
 - *memory* - a memory-only cache that exists for the duration of the
   cache instance

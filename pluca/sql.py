@@ -139,5 +139,11 @@ class SqlCache(pluca.Cache):
 
         return res
 
+    def gc(self) -> None:
+        cur = self._conn.cursor()
+        cur.execute(f'DELETE FROM {self._table} WHERE {self._exp_col} <= ?',
+                    (time.time(),))
+        cur.close()
+
 
 Cache = SqlCache

@@ -66,9 +66,9 @@ class FileCache(pluca.Cache):
         return (self.cache_dir / self.name
                 / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat')
 
-    def _write(self, filename: Path, data: bytes) -> None:
+    def _write(self, filename: Path, value: Any) -> None:
         with open(filename, 'wb') as fd:
-            fd.write(data)
+            self._dump(fd, value)
 
     def _set_max_age(self, filename: Path,
                      max_age: Optional[float] = None) -> None:
@@ -95,13 +95,12 @@ class FileCache(pluca.Cache):
 
     def _put(self, key: Any, value: Any,
              max_age: Optional[float] = None) -> None:
-        data = self._dumps(value)
         filename = self._get_filename(key)
         try:
-            self._write(filename, data)
+            self._write(filename, value)
         except FileNotFoundError:
             filename.parent.mkdir(parents=True)
-            self._write(filename, data)
+            self._write(filename, value)
         self._set_max_age(filename, max_age)
 
     def _get(self, key: Any) -> Any:

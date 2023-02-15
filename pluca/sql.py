@@ -41,19 +41,28 @@ class SqlCache(pluca.Cache):
         self._v_col = v_column
         self._exp_col = expires_column
 
-        if connection.__class__ == 'sqlite3.Connection':
+        self._ph: str
+
+        if connection.__class__.__module__ == 'sqlite3':
+            self._ph = '?'
             self._put = self._put_on_conflict  # type: ignore [assignment]
+        elif connection.__class__.__module__ == 'postgresql':
+            self._ph = '%s'
+            self._put = self._put_on_conflict  # type: ignore [assignment]
+        else:
+            self._ph = '%s'
 
     def _put(self, key: Any, value: Any,
              max_age: Optional[float] = None) -> None:
         cur = self._conn.cursor()
-        cur.execute(f'DELETE FROM {self._table} WHERE {self._k_col} = ?',
+        cur.execute(f'DELETE FROM {self._table} '
+                    f'WHERE {self._k_col} = {self._ph}',
                     (key,))
         cur.close()
         cur = self._conn.cursor()
         cur.execute(f'INSERT INTO {self._table} '
                     f'({self._k_col}, {self._v_col}, {self._exp_col}) '
-                    f'VALUES (?, ?, ?)',
+                    f'VALUES ({self._ph}, {self._ph}, {self._ph})',
                     (key, self._dumps(value),
                      time.time() + max_age if max_age else None))
         cur.close()
@@ -67,18 +76,20 @@ class SqlCache(pluca.Cache):
         cur = self._conn.cursor()
         cur.execute(f'INSERT INTO {self._table} '
                     f'({self._k_col}, {self._v_col}, {self._exp_col}) '
-                    f'VALUES (?, ?, ?) '
+                    f'VALUES ({self._ph}, {self._ph}, {self._ph}) '
                     f'ON CONFLICT({self._k_col}) DO UPDATE SET '
-                    f'{self._v_col} = ?, {self._exp_col} = ?',
+                    f'{self._v_col} = {self._ph}, '
+                    f'{self._exp_col} = {self._ph}',
                     (key, svalue, expires, svalue, expires))
         cur.close()
 
     def _get(self, key: Any) -> Any:
         cur = self._conn.cursor()
-        cur.execute(f'SELECT {self._v_col} '
+        cur.execute(f'SELECT {self._v_col}, {self._exp_col} '
                     f'FROM {self._table} '
-                    f'WHERE {self._k_col} = ? '
-                    f'AND ({self._exp_col} IS NULL OR {self._exp_col} > ?)',
+                    f'WHERE {self._k_col} = {self._ph} '
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph})',
                     (key, time.time()))
         row = cur.fetchone()
         cur.close()
@@ -88,7 +99,8 @@ class SqlCache(pluca.Cache):
 
     def _remove(self, key: Any) -> None:
         cur = self._conn.cursor()
-        cur.execute(f'DELETE FROM {self._table} WHERE {self._k_col} = ?',
+        cur.execute(f'DELETE FROM {self._table} '
+                    f'WHERE {self._k_col} = {self._ph}',
                     (key,))
         rowcount = cur.rowcount
         cur.close()
@@ -104,8 +116,9 @@ class SqlCache(pluca.Cache):
         cur = self._conn.cursor()
         cur.execute('SELECT EXISTS('
                     f'SELECT * FROM {self._table} '
-                    f'WHERE {self._k_col} = ? '
-                    f'AND ({self._exp_col} IS NULL OR {self._exp_col} > ?))',
+                    f'WHERE {self._k_col} = {self._ph} '
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph}))',
                     (key, time.time()))
         has = bool(cur.fetchone()[0])
         cur.close()
@@ -116,7 +129,7 @@ class SqlCache(pluca.Cache):
 
         all_keys = {self._map_key(k): k for k in keys}
 
-        in_list = ', '.join(['?'] * len(all_keys))
+        in_list = ', '.join([self._ph] * len(all_keys))
         args: List[Any] = list(all_keys.keys())
         args.append(time.time())
 
@@ -126,7 +139,8 @@ class SqlCache(pluca.Cache):
         cur.execute(f'SELECT {self._k_col}, {self._v_col} '
                     f'FROM {self._table} '
                     f'WHERE {self._k_col} IN ({in_list}) '
-                    f'AND ({self._exp_col} IS NULL OR {self._exp_col} > ?)',
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph})',
                     tuple(args))
 
         for row in cur.fetchall():
@@ -141,7 +155,8 @@ class SqlCache(pluca.Cache):
 
     def gc(self) -> None:
         cur = self._conn.cursor()
-        cur.execute(f'DELETE FROM {self._table} WHERE {self._exp_col} <= ?',
+        cur.execute(f'DELETE FROM {self._table} '
+                    f'WHERE {self._exp_col} <= {self._ph}',
                     (time.time(),))
         cur.close()
 

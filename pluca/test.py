@@ -12,6 +12,8 @@ else:
     _BaseClass = object
 
 
+# Yes, I know this is big, but in this case bigger is better, therefore
+# pylint: disable-next=too-many-public-methods
 class CacheTester(abc.ABC, _BaseClass):
 
     @abc.abstractmethod
@@ -186,3 +188,8 @@ class CacheTester(abc.ABC, _BaseClass):
         self.assertEqual(func(1, 2), 3)
 
         self.assertEqual(calls, 2)
+
+    def test_gc(self) -> None:
+        # This really only checks that the method is not generating
+        # any errors.
+        self.get_cache().gc()

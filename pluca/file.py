@@ -2,7 +2,6 @@ import warnings
 import os
 import time
 import shutil
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Any, BinaryIO
 
@@ -13,7 +12,6 @@ _FILE_MAX_AGE = 1_000_000_000
 _DIR_PREFIX = 'cache-'
 
 
-@dataclass
 class FileCache(pluca.Cache):
     """File cache for pluca.
 
@@ -37,21 +35,27 @@ class FileCache(pluca.Cache):
 
     """
 
-    name: str = 'pluca'
-    cache_dir: Optional[Path] = None
+    def __init__(self, name: str = 'pluca',
+                 cache_dir: Optional[Path] = None) -> None:
 
-    def __post_init__(self) -> None:
-        if self.cache_dir is None:
+        if cache_dir is None:
             try:
                 import appdirs  # pylint: disable=import-outside-toplevel
-                self.cache_dir = Path(appdirs.user_cache_dir())
+                cache_dir = Path(appdirs.user_cache_dir())
             except ModuleNotFoundError:
-                self.cache_dir = Path.home() / '.cache'
-        elif isinstance(self.cache_dir, str):
-            self.cache_dir = Path(self.cache_dir)
+                cache_dir = Path.home() / '.cache'
+        elif not isinstance(cache_dir, Path):
+            cache_dir = Path(cache_dir)
 
-        if not self.cache_dir.exists():
-            self.cache_dir.mkdir(parents=True)
+        if not cache_dir.exists():
+            cache_dir.mkdir(parents=True)
+
+        self.name = name
+        self.cache_dir = cache_dir
+
+    def __repr__(self) -> str:
+        return (f'{self.__class__.__name__}'
+                f'(name={self.name!r}, cache_dir={self.cache_dir!r})')
 
     def _dump(self, obj: Any, fd: BinaryIO) -> None:
         import pickle  # pylint: disable=import-outside-toplevel

@@ -1,5 +1,4 @@
 import time
-from dataclasses import dataclass
 from typing import Dict, Optional, Any, NamedTuple
 
 import pluca
@@ -14,7 +13,6 @@ class _Entry(NamedTuple):
         return self.expire is None or self.expire > time.time()
 
 
-@dataclass
 class MemoryCache(pluca.Cache):
     """Memory cache for pluca.
 
@@ -30,10 +28,12 @@ class MemoryCache(pluca.Cache):
 
     """
 
-    max_entries: Optional[int] = None
-
-    def __post_init__(self) -> None:
+    def __init__(self, max_entries: Optional[int] = None) -> None:
+        self.max_entries = max_entries
         self._storage: Dict[Any, _Entry] = {}
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(max_entries={self.max_entries!r})'
 
     def _put(self, key: Any, value: Any,
              max_age: Optional[float] = None) -> None:

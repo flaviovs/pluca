@@ -434,8 +434,8 @@ You can also configure the API using a dict-like object using
     ...         },
     ...     },
     ... })
-    >>> pluca.cache.get_cache('mod')  # doctest: +ELLIPSIS
-    <pluca.null.NullCache object at 0x...>
+    >>> pluca.cache.get_cache('mod')
+    NullCache()
 
 A facility to set up the API using a configuration file is also
 provided. Heres an example:
@@ -462,8 +462,8 @@ provided. Heres an example:
     >>>
     >>> pluca.cache.file_config(temp.name)
     >>>
-    >>> pluca.cache.get_cache('mod')  # doctest: +ELLIPSIS
-    <pluca.null.NullCache object at 0x...>
+    >>> pluca.cache.get_cache('mod')
+    NullCache()
 
 
 ### Removing caches

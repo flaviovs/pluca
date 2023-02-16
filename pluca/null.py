@@ -11,6 +11,9 @@ class NullCache(pluca.Cache):
 
     """
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}()'
+
     def _put(self, key: Any, value: Any,
              max_age: Optional[float] = None) -> None:
         pass

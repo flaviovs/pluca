@@ -55,6 +55,14 @@ class SqlCache(pluca.Cache):
         else:
             self._ph = '%s'
 
+    def __repr__(self) -> str:
+        return (f'{self.__class__.__name__}('
+                f'connection={self._conn!r}, '
+                f'table={self._table!r}, '
+                f'k_column={self._k_col!r}, '
+                f'v_column={self._v_col!r}, '
+                f'expires_column={self._exp_col!r}')
+
     def _put(self, key: Any, value: Any,
              max_age: Optional[float] = None) -> None:
         cur = self._conn.cursor()

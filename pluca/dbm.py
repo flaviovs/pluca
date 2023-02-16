@@ -27,6 +27,9 @@ class DbmCache(pluca.Cache):
     def __init__(self, dbm: Any):
         self.dbm = dbm
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(dbm={self.dbm!r})'
+
     def _put(self, key: Any, value: Any,
              max_age: Optional[float] = None) -> None:
         self.dbm[key] = self._dumps(_Entry(value, max_age))

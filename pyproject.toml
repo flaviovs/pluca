@@ -25,7 +25,14 @@ ignore_missing_imports = true
 ignore-paths = ['.git', '.venv']
 ignore-patterns = '^\.#'
 recursive = true
-load-plugins = ['pylint.extensions.bad_builtin']
+load-plugins = [
+	     'pylint.extensions.bad_builtin',
+	     'pylint.extensions.check_elif',
+	     'pylint.extensions.docparams',
+	     'pylint.extensions.docstyle',
+	     'pylint.extensions.mccabe',
+	     'pylint.extensions.overlapping_exceptions',
+]
 
 [tool.pylint.basic]
 jobs = 0

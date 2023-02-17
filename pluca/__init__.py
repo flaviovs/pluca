@@ -3,7 +3,7 @@ from functools import wraps, partial
 from typing import (Optional, Any, Iterable, Mapping, Callable,
                     List, Tuple, Union)
 
-__version__ = '0.4.0'
+__version__ = '0.5.0'
 
 
 class CacheError(Exception):

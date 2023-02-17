@@ -22,3 +22,16 @@ class TestMemory(CacheTester, unittest.TestCase):
         self.assertTrue(cache.has('key3'))
         self.assertTrue(cache.has('key2'))
         self.assertFalse(cache.has('key1'))
+
+    def test_gc(self) -> None:
+        cache = pluca.memory.Cache(max_entries=2)
+
+        cache.put('key1', 1)
+        cache.put('key2', 2)
+        cache.put('key3', 3)
+
+        cache.gc()
+
+        self.assertTrue(cache.has('key2'))
+        self.assertTrue(cache.has('key3'))
+        self.assertFalse(cache.has('key1'))

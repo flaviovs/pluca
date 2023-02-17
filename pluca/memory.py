@@ -7,6 +7,7 @@ import pluca
 class _Entry(NamedTuple):
     data: Any
     expire: float
+    index_: int
 
     @property
     def is_fresh(self) -> bool:
@@ -31,17 +32,21 @@ class MemoryCache(pluca.Cache):
     def __init__(self, max_entries: Optional[int] = None) -> None:
         self.max_entries = max_entries
         self._storage: Dict[Any, _Entry] = {}
+        self._count: int = 0
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(max_entries={self.max_entries!r})'
 
     def _put(self, key: Any, value: Any,
              max_age: Optional[float] = None) -> None:
+        if key not in self._storage:
+            self._count += 1
         self._storage[key] = _Entry(
             data=value,
-            expire=(time.time() + max_age if max_age else float('inf')))
+            expire=(time.time() + max_age if max_age else float('inf')),
+            index_=self._count)
         if (self.max_entries is not None
-                and len(self._storage) > self.max_entries):
+                and self._count > self.max_entries):
             self._prune()
 
     def _prune(self) -> None:
@@ -50,37 +55,42 @@ class MemoryCache(pluca.Cache):
         self.gc()
 
         items = sorted(self._storage.items(),
-                       key=lambda x: x[1].expire,
+                       key=lambda x: (x[1].expire or sys.float_info.max,
+                                      x[1].index_),
                        reverse=True)
         self._storage = {}
-        nr = 0
+        self._count = 0
         for (key, item) in items:
+            self._count += 1
             self._storage[key] = item
-            nr += 1
-            if nr >= self.max_entries:
+            if self._count >= self.max_entries:
                 break
 
     def _get(self, key: Any) -> Any:
         entry = self._storage[key]
         if not entry.is_fresh:
             del self._storage[key]
+            self._count -= 1
             raise KeyError(key)
         return entry.data
 
     def _remove(self, key: Any) -> None:
         entry = self._storage[key]
         del self._storage[key]
+        self._count -= 1
         if not entry.is_fresh:
             raise KeyError(key)
 
     def flush(self) -> None:
         self._storage = {}
+        self._count = 0
 
     def _has(self, key: Any) -> bool:
         return key in self._storage
 
     def gc(self) -> None:
         self._storage = {k: e for k, e in self._storage.items() if e.is_fresh}
+        self._count = len(self._storage)
 
 
 Cache = MemoryCache

@@ -62,3 +62,12 @@ class TestDbmDumb(_TestMixin, CacheTester, unittest.TestCase):
         except ImportError as ex:
             raise unittest.SkipTest(str(ex)) from ex
         self._open_db(dbm.dumb)
+
+
+class TestGeneric(unittest.TestCase):
+
+    def test_constructor_accept_filename(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            cache = pluca.dbm.Cache(f'{tempdir}/db')
+            cache.put('foo', 'bar')
+            self.assertEqual('bar', cache.get('foo'))

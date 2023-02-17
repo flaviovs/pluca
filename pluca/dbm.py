@@ -1,4 +1,5 @@
 import time
+import dbm
 from typing import Any, Optional, NamedTuple
 
 import pluca
@@ -19,13 +20,17 @@ class DbmCache(pluca.Cache):
     This cache store entries in DBM files. It uses Python's [DBM
     database interface](https://docs.python.org/3/library/dbm.html).
 
+    You call instantiate DBM caches with either an existing DMB file
+    handle, or a file name. In the latter case, the file will be
+    created if it does not exist.
+
     Args:
-        dbm: The DBM object.
+        db: The DBM object, or a database file name.
 
     """
 
-    def __init__(self, dbm: Any):
-        self.dbm = dbm
+    def __init__(self, db: Any):
+        self.dbm = dbm.open(db, 'c') if isinstance(db, str) else db
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(dbm={self.dbm!r})'

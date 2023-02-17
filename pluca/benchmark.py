@@ -166,7 +166,7 @@ def _main() -> None:
         import dbm.gnu  # pylint: disable=import-outside-toplevel
         with tempfile.TemporaryDirectory() as tempdir:
             dbg = dbm.gnu.open(f'{tempdir}/db', 'n')
-            benchmark('DMB gnu', args.entries, pluca.dbm.Cache, dbm=dbg)
+            benchmark('DMB gnu', args.entries, pluca.dbm.Cache, db=dbg)
             dbg.close()
     except ModuleNotFoundError as ex:
         warnings.warn(f'Could not benchmark dbm.gnu: {ex}')
@@ -176,7 +176,7 @@ def _main() -> None:
         with tempfile.TemporaryDirectory() as tempdir:
             # pylint: disable-next=no-member
             dbn = dbm.ndbm.open(f'{tempdir}/db', 'n')
-            benchmark('DMB ndbm', args.entries, pluca.dbm.Cache, dbm=dbn)
+            benchmark('DMB ndbm', args.entries, pluca.dbm.Cache, db=dbn)
             dbn.close()
     except ModuleNotFoundError as ex:
         warnings.warn(f'Could not benchmark dbm.ndbm: {ex}')
@@ -185,7 +185,7 @@ def _main() -> None:
         import dbm.dumb  # pylint: disable=import-outside-toplevel
         with tempfile.TemporaryDirectory() as tempdir:
             dbd = dbm.dumb.open(f'{tempdir}/db', 'n')
-            benchmark('DMB dumb', args.entries, pluca.dbm.Cache, dbm=dbd)
+            benchmark('DMB dumb', args.entries, pluca.dbm.Cache, db=dbd)
             dbd.close()
     except ModuleNotFoundError as ex:
         warnings.warn(f'Could not benchmark dbm.dumb: {ex}')

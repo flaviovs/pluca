@@ -39,3 +39,14 @@ class TestMemory(CacheTester, unittest.TestCase):
     def test_constructor_validation(self) -> None:
         with self.assertRaises(ValueError):
             pluca.memory.Cache(max_entries=2, prune=3)
+
+    def test_copy_data(self) -> None:
+        cache = pluca.memory.Cache()
+
+        alist = [1, 2, 3]
+
+        cache.put('alist', alist)
+
+        alist[1] = 20
+
+        self.assertEqual(cache.get('alist'), [1, 2, 3])

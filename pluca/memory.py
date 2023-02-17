@@ -60,7 +60,7 @@ class MemoryCache(pluca.Cache):
         if key not in self._storage:
             self._count += 1
         self._storage[key] = _Entry(
-            data=value,
+            data=self._dumps(value),
             expire=(time.time() + max_age if max_age else None),
             index_=self._count)
         if (self.max_entries is not None
@@ -92,7 +92,7 @@ class MemoryCache(pluca.Cache):
             del self._storage[key]
             self._count -= 1
             raise KeyError(key)
-        return entry.data
+        return self._loads(entry.data)
 
     def _remove(self, key: Any) -> None:
         entry = self._storage[key]

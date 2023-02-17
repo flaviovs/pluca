@@ -39,6 +39,7 @@ jobs = 0
 
 # Good variable names which should always be accepted, separated by a comma.
 good-names = [
+	   'i',
 	   'ex',
 	   'fd',
 	   'gc',

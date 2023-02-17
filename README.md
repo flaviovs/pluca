@@ -529,6 +529,18 @@ To obtain help about those cache back-ends, run
 above.
 
 
+Benchmarking
+------------
+
+The _pluca.benchmark_ module can be used to benchmark the back-ends:
+
+```console
+$ python -m pluca.benchmark
+```
+
+Pass `-h` to see the benchmark options.
+
+
 Issues? Bugs? Suggestions?
 --------------------------
 Visit: https://github.com/flaviovs/pluca

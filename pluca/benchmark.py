@@ -3,7 +3,6 @@ import argparse
 import gc
 import os
 import random
-import sqlite3
 import string
 import sys
 import time
@@ -15,7 +14,7 @@ import pluca
 import pluca.file
 import pluca.memory
 import pluca.null
-import pluca.sql
+import pluca.sqlite3
 import pluca.dbm
 
 
@@ -127,14 +126,6 @@ def benchmark(name: str, entries: int,
     gc.collect()
 
 
-def _create_sqlite_table(conn: sqlite3.Connection) -> None:
-    conn.execute('CREATE TABLE cache ('
-                 'k VARCHAR(40) PRIMARY KEY, '
-                 'v BLOB NOT NULL, '
-                 'expires FLOAT'
-                 ')')
-
-
 def _main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--entries',
@@ -155,25 +146,21 @@ def _main() -> None:
     benchmark('Null', args.entries, pluca.null.Cache)
 
     with tempfile.NamedTemporaryFile() as ctx:
-        conn = sqlite3.connect(ctx.name)
-        _create_sqlite_table(conn)
         benchmark('SQLite file',
-                  args.entries, pluca.sql.Cache, connection=conn)
-        conn.close()
+                  args.entries, pluca.sqlite3.Cache, filename=ctx.name)
 
     with tempfile.NamedTemporaryFile() as ctx:
-        conn = sqlite3.connect(ctx.name)
-        _create_sqlite_table(conn)
-        conn.isolation_level = None
         benchmark('SQLite file autocommit',
-                  args.entries, pluca.sql.Cache, connection=conn)
-        conn.close()
+                  args.entries, pluca.sqlite3.Cache,
+                  filename=ctx.name, isolation_level=None)
 
-    conn = sqlite3.connect(':memory:')
-    _create_sqlite_table(conn)
+    with tempfile.NamedTemporaryFile() as ctx:
+        benchmark('SQLite file WAL',
+                  args.entries, pluca.sqlite3.Cache,
+                  filename=ctx.name, pragma={'journal_mode': 'WAL'})
+
     benchmark('SQLite :memory:',
-              args.entries, pluca.sql.Cache, connection=conn)
-    conn.close()
+              args.entries, pluca.sqlite3.Cache, filename=':memory:')
 
     try:
         import dbm.gnu  # pylint: disable=import-outside-toplevel

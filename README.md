@@ -517,12 +517,19 @@ Included back-ends
 
 These are the cache back-ends that come with the _pluca_ package:
 
-- *dbm* - store cache entries usim DBM “databases”
-- *file* - store cache entries on the file system
+- *dbm* - store cache entries usim DBM “databases”.
+
+- *file* - store cache entries on the file system.
+
 - *memory* - a memory-only cache that exists for the duration of the
-  cache instance
-- *null* - the null cache - `get()` always raises _KeyError_
-- *sql* - store cache entries in SQL databases
+  cache instance.
+
+- *null* - the null cache - `get()` always raises _KeyError_.
+
+- *sql* - store cache entries in SQL databases.
+
+- *sqlite3* - store cache entries in a SQLite3 database. Based on the
+  _sql_ back-end, but with SQLite3 specific functionalities.
 
 To obtain help about those cache back-ends, run
 `help(pluca.MODULE.Cache)`, where _MODULE_ is one of the module names

@@ -32,6 +32,10 @@ class TestMemory(CacheTester, unittest.TestCase):
 
         cache.gc()
 
-        self.assertTrue(cache.has('key2'))
         self.assertTrue(cache.has('key3'))
+        self.assertTrue(cache.has('key2'))
         self.assertFalse(cache.has('key1'))
+
+    def test_constructor_validation(self) -> None:
+        with self.assertRaises(ValueError):
+            pluca.memory.Cache(max_entries=2, prune=3)

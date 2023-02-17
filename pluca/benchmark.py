@@ -147,8 +147,11 @@ def _main() -> None:
 
     benchmark('File', args.entries, pluca.file.Cache)
     benchmark('Memory unbounded', args.entries, pluca.memory.Cache)
-    benchmark(f'Memory max={args.entries // 2:,}',
+    benchmark(f'Memory {args.entries // 2:,}',
               args.entries, pluca.memory.Cache, max_entries=args.entries // 2)
+    benchmark(f'Memory {args.entries // 2:,} prune=20%',
+              args.entries, pluca.memory.Cache, max_entries=args.entries // 2,
+              prune=int(args.entries * 0.2))
     benchmark('Null', args.entries, pluca.null.Cache)
 
     with tempfile.NamedTemporaryFile() as ctx:

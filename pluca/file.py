@@ -71,8 +71,22 @@ class FileCache(pluca.Cache):
                 / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat')
 
     def _write(self, filename: Path, value: Any) -> None:
-        with open(filename, 'wb') as fd:
+        temp = filename.with_suffix('.tmp')
+        while True:
+            try:
+                fd = open(temp, 'xb')  # pylint: disable=consider-using-with
+            except FileExistsError:
+                time.sleep(0.1)
+            else:
+                break
+        try:
             self._dump(fd, value)
+        except:  # noqa: E722
+            temp.unlink()
+            raise
+        finally:
+            fd.close()
+        temp.replace(filename)
 
     def _set_max_age(self, filename: Path,
                      max_age: Optional[float] = None) -> None:

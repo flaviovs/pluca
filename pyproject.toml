@@ -25,6 +25,7 @@ ignore_missing_imports = true
 ignore-paths = ['.git', '.venv']
 ignore-patterns = '^\.#'
 recursive = true
+load-plugins = ['pylint.extensions.bad_builtin']
 
 [tool.pylint.basic]
 jobs = 0
@@ -46,6 +47,9 @@ disable = [
         "missing-module-docstring",
         "missing-class-docstring",
 ]
+
+[tool.pylint.deprecated_builtins]
+bad-functions = ["print"]
 
 [tool.taskipy.tasks]
 test = "python -m doctest README.md && python -m unittest tests/test_*.py"

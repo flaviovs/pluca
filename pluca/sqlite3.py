@@ -84,5 +84,8 @@ class SQLite3Cache(SqlCache):
         self._commit()
         self._conn.execute('PRAGMA optimize')
 
+    def shutdown(self) -> None:
+        self._conn.close()
+
 
 Cache = SQLite3Cache

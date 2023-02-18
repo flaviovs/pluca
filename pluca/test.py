@@ -193,3 +193,8 @@ class CacheTester(abc.ABC, _BaseClass):
         # This really only checks that the method is not generating
         # any errors.
         self.get_cache().gc()
+
+    def test_shutdown(self) -> None:
+        # This also only checks that the method is not generating any
+        # errors.
+        self.get_cache().shutdown()

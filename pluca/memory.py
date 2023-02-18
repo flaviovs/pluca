@@ -118,5 +118,7 @@ class MemoryCache(pluca.Cache):
                 and self._count > self.max_entries):
             self._prune()
 
+    shutdown = flush
+
 
 Cache = MemoryCache

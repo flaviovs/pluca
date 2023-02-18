@@ -67,5 +67,8 @@ class DbmCache(pluca.Cache):
         except AttributeError:
             pass
 
+    def shutdown(self) -> None:
+        self.dbm.close()
+
 
 Cache = DbmCache

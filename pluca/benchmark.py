@@ -110,6 +110,8 @@ def benchmark(name: str, entries: int,
     if gc_enabled:
         gc.enable()
 
+    cache.shutdown()
+
     put_duration = put_end - put_start
     get_duration = get_end - get_start
     get_miss_duration = get_miss_end - get_miss_start

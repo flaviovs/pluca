@@ -117,6 +117,15 @@ class Cache(abc.ABC):
             data.append((key, value))
         return data
 
+    def shutdown(self) -> None:
+        """Shutdown the cache.
+
+        Shuts down the cache. This releases all the resources used by
+        the cache. A cache object that has been shut down cannot be
+        used anymore.
+
+        """
+
     def __call__(self, func: Optional[Callable[..., Any]] = None,
                  max_age: Optional[int] = None) -> Callable[..., Any]:
 

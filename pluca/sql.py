@@ -140,6 +140,15 @@ class SqlCache(pluca.Cache):
         if rowcount == 0:
             raise KeyError(key)
 
+    def remove_many(self, keys: Iterable[Any]) -> None:
+        items = tuple(self._map_key(k) for k in keys)
+        cur = self._conn.cursor()
+        cur.execute(f'DELETE FROM {self._table} '
+                    f'WHERE {self._k_col} '
+                    f'IN ({", ".join([self._ph] * len(items))})',
+                    items)
+        cur.close()
+
     def flush(self) -> None:
         cur = self._conn.cursor()
         cur.execute(f'DELETE FROM {self._table}')

@@ -79,6 +79,21 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
             with self.assertRaises(KeyError):
                 cache.get('foo')
 
+    def test_remove_many_persists(self) -> None:
+        with tempfile.NamedTemporaryFile() as ctx:
+            cache = pluca.sqlite3.Cache(ctx.name)
+            cache.put('foo', 'bar')
+            cache.put('xii', 'lee')
+            cache.remove_many(['foo', 'xii'])
+            cache.shutdown()
+            del cache
+
+            cache = pluca.sqlite3.Cache(ctx.name)
+            with self.assertRaises(KeyError):
+                cache.get('foo')
+            with self.assertRaises(KeyError):
+                cache.get('xii')
+
     def test_flush_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
             cache = pluca.sqlite3.Cache(ctx.name)

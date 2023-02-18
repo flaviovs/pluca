@@ -81,6 +81,13 @@ class Cache(abc.ABC):
         except KeyError as ex:
             raise KeyError(key) from ex
 
+    def remove_many(self, keys: Iterable[Any]) -> None:
+        for key in keys:
+            try:
+                self.remove(key)
+            except KeyError:
+                pass
+
     @abc.abstractmethod
     def flush(self) -> None:
         pass

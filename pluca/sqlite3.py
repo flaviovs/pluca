@@ -75,6 +75,10 @@ class SQLite3Cache(SqlCache):
         super().remove(key)
         self._commit()
 
+    def remove_many(self, keys: Iterable[Any]) -> None:
+        super().remove_many(keys)
+        self._commit()
+
     def flush(self) -> None:
         super().flush()
         self._commit()

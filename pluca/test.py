@@ -103,6 +103,25 @@ class CacheTester(abc.ABC, _BaseClass):
             cache.remove('nonexistent')
         self.assertEqual(ctx.exception.args, ('nonexistent',))
 
+    def test_remove_many(self) -> None:
+        cache = self.get_cache()
+        cache.put('foo', 'bar')
+        cache.put('zee', 'lee')
+        cache.put('xii', 'moo')
+        cache.remove_many([
+            'foo',
+            'zee',
+            'never-set',  # NB: shouldn't raise KeyError.
+            'xii',
+        ])
+
+        with self.assertRaises(KeyError):
+            cache.get('bar')
+        with self.assertRaises(KeyError):
+            cache.get('zee')
+        with self.assertRaises(KeyError):
+            cache.get('xii')
+
     def test_flush(self) -> None:
         cache = self.get_cache()
         key1 = uuid.uuid4()

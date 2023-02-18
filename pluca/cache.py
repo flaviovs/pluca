@@ -13,7 +13,11 @@ logger = logging.getLogger(__name__)
 _DEFAULT_BACKEND = 'file'
 
 
-def add(node: str, cls: str, reuse: bool = True, **kwargs: Any) -> None:
+def add(node: Optional[str], cls: str, reuse: bool = True,
+        **kwargs: Any) -> None:
+
+    if node is None:
+        node = ''
 
     tnode = tuple(node.split('.'))
     if tnode in _caches:
@@ -44,7 +48,10 @@ def add(node: str, cls: str, reuse: bool = True, **kwargs: Any) -> None:
                  f'for {node!r}' if node else 'as root cache')
 
 
-def get_cache(node: str) -> Cache:
+def get_cache(node: Optional[str] = None) -> Cache:
+    if node is None:
+        node = ''
+
     if not _caches:
         basic_config()
 
@@ -61,11 +68,13 @@ def get_cache(node: str) -> Cache:
     return _caches[('',)]
 
 
-def get_child(parent: str, child: str) -> Cache:
-    return get_cache(f'{parent}.{child}')
+def get_child(parent: Optional[str], child: str) -> Cache:
+    return get_cache(f'{parent or ""}.{child}')
 
 
-def remove(node: str) -> None:
+def remove(node: Optional[str] = None) -> None:
+    if node is None:
+        node = ''
     try:
         del _caches[tuple(node.split('.'))]
     except KeyError as ex:

@@ -297,7 +297,7 @@ loggers.
 
 As a quick example, let’s say you configure three cache objects:
 
-- “” (the root cache) is a file cache
+- The root cache is a file cache
 - “pkg“ is a memory cache
 - “pkg.mod“ is a null cache
 
@@ -354,6 +354,9 @@ You can also customize the cache object:
 
     >>> pluca.cache.basic_config('file', cache_dir='/tmp')
 
+**Note**: when you call `basic_config()` all existing caches are
+removed before the new one is set up.
+
 To configure additional caches, use `pluca.cache.add()`:
 
     >>> pluca.cache.add('mod', 'memory', max_entries=100)
@@ -368,6 +371,13 @@ memory cache.
     >>> cache = pluca.cache.get_cache(__name__)
     >>> cache  # doctest: +SKIP
     MemoryCache(max_entries=None)
+
+Calling `get_cache()` returns the root cache:
+
+    >>> cache = pluca.cache.get_cache()
+    >>> cache  # doctest: +ELLIPSIS
+    FileCache(name=..., cache_dir=...)
+
 
 A call from another random module would return the root (file) cache:
 

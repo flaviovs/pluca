@@ -1,5 +1,6 @@
 import time
 import dbm
+from pathlib import Path
 from typing import Any, Optional, NamedTuple
 
 import pluca
@@ -30,7 +31,12 @@ class DbmCache(pluca.Cache):
     """
 
     def __init__(self, db: Any):
-        self.dbm = dbm.open(db, 'c') if isinstance(db, str) else db
+        if isinstance(db, str):
+            self.dbm = dbm.open(db, 'c')
+        elif isinstance(db, Path):
+            self.dbm = dbm.open(str(db), 'c')
+        else:
+            self.dbm = db
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(dbm={self.dbm!r})'
@@ -63,7 +69,7 @@ class DbmCache(pluca.Cache):
                 del self.dbm[key]
 
         try:
-            self.dbm.reorganize()
+            self.dbm.reorganize()  # type: ignore [attr-defined]
         except AttributeError:
             pass
 

@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from pathlib import Path
 from types import ModuleType
 
 import pluca
@@ -69,5 +70,11 @@ class TestGeneric(unittest.TestCase):
     def test_constructor_accept_filename(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
             cache = pluca.dbm.Cache(f'{tempdir}/db')
+            cache.put('foo', 'bar')
+            self.assertEqual('bar', cache.get('foo'))
+
+    def test_constructor_accept_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            cache = pluca.dbm.Cache(Path(tempdir) / 'db')
             cache.put('foo', 'bar')
             self.assertEqual('bar', cache.get('foo'))

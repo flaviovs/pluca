@@ -20,6 +20,13 @@ class SqlCache(pluca.Cache):
     You can pass parameters to the constructor to override the table
     and/or column names, if necessary.
 
+    Note:
+        The SQL cache does not keep track of database transactions. If
+        the connection is not in "auto-commit" mode, you must
+        explicitly issue database commits after write calls
+        (e.g. `put()`, `remove()`, etc.), otherwise your changes will
+        be lost if the current transaction is rolled back.
+
     Args:
         connection: A PEP 249 DB-ABI connection.
         table: The cache table name.

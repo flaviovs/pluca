@@ -1,8 +1,8 @@
-import importlib
 import logging
 from typing import Dict, Tuple, Optional, Mapping, Any
 
 from pluca import Cache
+from .utils import create_cache
 
 _caches: Dict[Tuple[str, ...], Cache] = {}
 
@@ -31,11 +31,7 @@ def add(node: Optional[str], cls: str, reuse: bool = True,
     cache: Optional[Cache] = _nodes.get(node_key, None) if reuse else None
 
     if not cache:
-        (module, class_) = cls.rsplit('.', 1)
-        mod = importlib.import_module(module)
-        factory = getattr(mod, class_)
-        cache = factory(**kwargs)
-        assert cache is not None
+        cache = create_cache(cls, **kwargs)
 
     if node and ('',) not in _caches:
         # No root cache.

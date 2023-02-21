@@ -55,7 +55,7 @@ class DbmCache(pluca.Cache):
     def _remove(self, key: Any) -> None:
         del self.dbm[key]
 
-    def flush(self) -> None:
+    def _flush(self) -> None:
         for key in self.dbm.keys():
             del self.dbm[key]
 

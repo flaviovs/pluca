@@ -101,7 +101,7 @@ class MemoryCache(pluca.Cache):
         if not entry.is_fresh:
             raise KeyError(key)
 
-    def flush(self) -> None:
+    def _flush(self) -> None:
         self._storage = {}
         self._count = 0
 
@@ -118,7 +118,7 @@ class MemoryCache(pluca.Cache):
                 and self._count > self.max_entries):
             self._prune()
 
-    shutdown = flush
+    shutdown = _flush
 
 
 Cache = MemoryCache

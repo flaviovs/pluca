@@ -30,7 +30,7 @@ class NullCache(pluca.Cache):
     def _pass(self) -> None:
         pass
 
-    flush = _pass
+    _flush = _pass
     gc = _pass
 
 

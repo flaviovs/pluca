@@ -155,7 +155,7 @@ class CompositeCache(pluca.Cache):
         for cache in self._caches:
             cache.remove_many(keys)
 
-    def flush(self) -> None:
+    def _flush(self) -> None:
         for cache in self._caches:
             cache.flush()
 

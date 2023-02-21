@@ -134,7 +134,7 @@ class FileCache(pluca.Cache):
         except FileNotFoundError as ex:
             raise KeyError(key) from ex
 
-    def flush(self) -> None:
+    def _flush(self) -> None:
         assert self.cache_dir is not None
         for path in (self.cache_dir / self.name).iterdir():
             if path.name.startswith(_DIR_PREFIX) and path.is_dir():

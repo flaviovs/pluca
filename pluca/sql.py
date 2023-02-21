@@ -149,7 +149,7 @@ class SqlCache(pluca.Cache):
                     items)
         cur.close()
 
-    def flush(self) -> None:
+    def _flush(self) -> None:
         cur = self._conn.cursor()
         cur.execute(f'DELETE FROM {self._table}')
         cur.close()

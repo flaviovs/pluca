@@ -89,8 +89,11 @@ class Cache(abc.ABC):
                 pass
 
     @abc.abstractmethod
-    def flush(self) -> None:
+    def _flush(self) -> None:
         pass
+
+    def flush(self) -> None:
+        self._flush()
 
     def _has(self, key: Any) -> bool:
         try:

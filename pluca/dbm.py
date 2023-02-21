@@ -43,7 +43,9 @@ class DbmCache(pluca.Cache):
 
     def _put(self, mkey: Any, value: Any,
              max_age: Optional[float] = None) -> None:
-        self.dbm[mkey] = self._dumps(_Entry(value, max_age))
+        self.dbm[mkey] = self._dumps(_Entry(value,
+                                            time.time() + max_age
+                                            if max_age else None))
 
     def _get(self, mkey: Any) -> Any:
         entry = self._loads(self.dbm[mkey])

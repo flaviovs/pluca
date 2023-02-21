@@ -74,6 +74,8 @@ def remove(node: Optional[str] = None) -> None:
     try:
         del _caches[tuple(node.split('.'))]
     except KeyError as ex:
+        if not node:
+            return
         raise KeyError(node) from ex
     logger.debug('Removed cache for %r', node)
 

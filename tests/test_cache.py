@@ -9,6 +9,7 @@ import pluca.memory
 import pluca.cache as plc
 
 
+# pylint: disable=too-many-public-methods
 class TestCache(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -103,6 +104,10 @@ class TestCache(unittest.TestCase):
 
         cache = plc.get_cache('mod')
         self.assertIsInstance(cache, pluca.file.Cache)
+
+    def test_remove_root_multiple_times(self) -> None:
+        plc.remove()
+        plc.remove()  # NB: should not issue KeyError
 
     def test_remove_raises_keyerror(self) -> None:
         with self.assertRaises(KeyError) as ctx:

@@ -496,13 +496,21 @@ API, call `pluca.cache.remove_all()`:
     >>> pluca.cache.remove_all()
 
 
-### Flushing, garbage collection
+### Flushing, garbage collection, shutdown
 
 You can do garbage colletion and flush all Global Cache API caches at
 once:
 
     >> pluca.cache.flush()
     >> pluca.cache.gc()
+
+Both `remove()` and `remove_all()` functions shutdown removed caches
+automatically. To prevent this, pass _False_ in `shutdown`:
+
+    >>> pluca.cache.basic_config()
+    >>>
+    >>> pluca.cache.remove(shutdown=False)
+    >>> pluca.cache.remove_all(shutdown=False)
 
 
 Caveats

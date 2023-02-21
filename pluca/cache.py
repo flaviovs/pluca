@@ -68,19 +68,31 @@ def get_child(parent: Optional[str], child: str) -> Cache:
     return get_cache(f'{parent or ""}.{child}')
 
 
-def remove(node: Optional[str] = None) -> None:
+def remove(node: Optional[str] = None, shutdown: bool = True) -> None:
     if node is None:
         node = ''
+
+    tnode = tuple(node.split('.'))
+
     try:
-        del _caches[tuple(node.split('.'))]
+        cache = _caches[tnode]
     except KeyError as ex:
         if not node:
             return
         raise KeyError(node) from ex
+
+    if shutdown:
+        cache.shutdown()
+
+    del _caches[tnode]
+
     logger.debug('Removed cache for %r', node)
 
 
-def remove_all() -> None:
+def remove_all(shutdown: bool = True) -> None:
+    if shutdown:
+        for cache in _caches.values():
+            cache.shutdown()
     _caches.clear()
     _nodes.clear()
     logger.debug('All caches removed')

@@ -80,8 +80,8 @@ can expire entries though, for example to use less resource. Here’s an
 example of how to store a cache entry with an explicit expiration
 time:
 
-    >>> cache.put('see-you', 'in two secs', 2)  # Expire in 2 seconds.
-    >>> import time; time.sleep(3)  # Wait for it to expire.
+    >>> cache.put('see-you', 'in two secs', 1)  # Expire in 1 second.
+    >>> import time; time.sleep(1)  # Wait for it to expire.
     >>> cache.get('see-you')
     Traceback (most recent call last):
         ...
@@ -180,7 +180,7 @@ result:
 
 Each function can have their own expiration:
 
-    >>> @cache(max_age=2)  # Expire after two seconds.
+    >>> @cache(max_age=1)  # Expire after one second.
     ... def quick_calculation(alpha, beta):
     ...     print(f'Calculating {alpha} + {beta}')
     ...     return alpha + beta
@@ -195,7 +195,7 @@ First call executes the function. Second call gets the cached value.
 
 After the expiry time the calculation is done again:
 
-    >>> import time; time.sleep(2)
+    >>> import time; time.sleep(1)
     >>> quick_calculation(1, 2)
     Calculating 1 + 2
     3

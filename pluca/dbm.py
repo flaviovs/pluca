@@ -41,19 +41,19 @@ class DbmCache(pluca.Cache):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(dbm={self.dbm!r})'
 
-    def _put(self, key: Any, value: Any,
+    def _put(self, mkey: Any, value: Any,
              max_age: Optional[float] = None) -> None:
-        self.dbm[key] = self._dumps(_Entry(value, max_age))
+        self.dbm[mkey] = self._dumps(_Entry(value, max_age))
 
-    def _get(self, key: Any) -> Any:
-        entry = self._loads(self.dbm[key])
+    def _get(self, mkey: Any) -> Any:
+        entry = self._loads(self.dbm[mkey])
         if not entry.is_fresh:
-            del self.dbm[key]
-            raise KeyError(key)
+            del self.dbm[mkey]
+            raise KeyError(mkey)
         return entry.value
 
-    def _remove(self, key: Any) -> None:
-        del self.dbm[key]
+    def _remove(self, mkey: Any) -> None:
+        del self.dbm[mkey]
 
     def _flush(self) -> None:
         for key in self.dbm.keys():

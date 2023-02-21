@@ -70,18 +70,18 @@ class SqlCache(pluca.Cache):
                 f'v_column={self._v_col!r}, '
                 f'expires_column={self._exp_col!r})')
 
-    def _put(self, key: Any, value: Any,
+    def _put(self, mkey: Any, value: Any,
              max_age: Optional[float] = None) -> None:
         cur = self._conn.cursor()
         cur.execute(f'DELETE FROM {self._table} '
                     f'WHERE {self._k_col} = {self._ph}',
-                    (key,))
+                    (mkey,))
         cur.close()
         cur = self._conn.cursor()
         cur.execute(f'INSERT INTO {self._table} '
                     f'({self._k_col}, {self._v_col}, {self._exp_col}) '
                     f'VALUES ({self._ph}, {self._ph}, {self._ph})',
-                    (key, self._dumps(value),
+                    (mkey, self._dumps(value),
                      time.time() + max_age if max_age else None))
         cur.close()
 
@@ -116,29 +116,29 @@ class SqlCache(pluca.Cache):
                     (key, svalue, expires, svalue, expires))
         cur.close()
 
-    def _get(self, key: Any) -> Any:
+    def _get(self, mkey: Any) -> Any:
         cur = self._conn.cursor()
         cur.execute(f'SELECT {self._v_col}, {self._exp_col} '
                     f'FROM {self._table} '
                     f'WHERE {self._k_col} = {self._ph} '
                     f'AND ({self._exp_col} IS NULL '
                     f'OR {self._exp_col} > {self._ph})',
-                    (key, time.time()))
+                    (mkey, time.time()))
         row = cur.fetchone()
         cur.close()
         if not row:
-            raise KeyError(key)
+            raise KeyError(mkey)
         return self._loads(row[0])
 
-    def _remove(self, key: Any) -> None:
+    def _remove(self, mkey: Any) -> None:
         cur = self._conn.cursor()
         cur.execute(f'DELETE FROM {self._table} '
                     f'WHERE {self._k_col} = {self._ph}',
-                    (key,))
+                    (mkey,))
         rowcount = cur.rowcount
         cur.close()
         if rowcount == 0:
-            raise KeyError(key)
+            raise KeyError(mkey)
 
     def remove_many(self, keys: Iterable[Any]) -> None:
         items = tuple(self._map_key(k) for k in keys)

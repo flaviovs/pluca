@@ -14,12 +14,12 @@ class NullCache(pluca.Cache):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}()'
 
-    def _put(self, key: Any, value: Any,
+    def _put(self, mkey: Any, value: Any,
              max_age: Optional[float] = None) -> None:
         pass
 
-    def _raise_keyerror(self, key: Any) -> Any:
-        raise KeyError(key)
+    def _raise_keyerror(self, mkey: Any) -> Any:
+        raise KeyError(mkey)
 
     _get = _raise_keyerror
     _remove = _raise_keyerror

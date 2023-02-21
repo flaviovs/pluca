@@ -117,18 +117,19 @@ class CompositeCache(pluca.Cache):
     def caches(self) -> List[pluca.Cache]:
         return self._caches.copy()
 
-    def _put(self, key: Any, value: Any,
+    def _put(self, mkey: Any, value: Any,
              max_age: Optional[float] = None) -> None:
         for cache in self._caches:
-            cache._put(key, value, max_age)  # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
+            cache._put(mkey, value, max_age)
 
-    def _get(self, key: Any) -> Any:
+    def _get(self, mkey: Any) -> Any:
         for cache in self._caches:
             try:
-                return cache._get(key)  # pylint: disable=protected-access
+                return cache._get(mkey)  # pylint: disable=protected-access
             except KeyError:
                 pass
-        raise KeyError(key)
+        raise KeyError(mkey)
 
     def gc(self) -> None:
         for cache in self._caches:
@@ -136,9 +137,9 @@ class CompositeCache(pluca.Cache):
 
     def get_put(self, key: Any, func: Callable[[], Any],
                 max_age: Optional[float] = None) -> Any:
-        ckey = self._map_key(key)
+        mkey = self._map_key(key)
         try:
-            return self._get(ckey)
+            return self._get(mkey)
         except KeyError:
             pass
 
@@ -146,9 +147,9 @@ class CompositeCache(pluca.Cache):
         self.put(key, value, max_age)
         return value
 
-    def _remove(self, key: Any) -> None:
+    def _remove(self, mkey: Any) -> None:
         for cache in self._caches:
-            cache._remove(key)  # pylint: disable=protected-access
+            cache._remove(mkey)  # pylint: disable=protected-access
 
     def remove_many(self, keys: Iterable[Any]) -> None:
         keys = tuple(keys)

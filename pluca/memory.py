@@ -55,11 +55,11 @@ class MemoryCache(pluca.Cache):
         return (f'{self.__class__.__name__}(max_entries={self.max_entries!r}, '
                 f'prune={self.prune})')
 
-    def _put(self, key: Any, value: Any,
+    def _put(self, mkey: Any, value: Any,
              max_age: Optional[float] = None) -> None:
-        if key not in self._storage:
+        if mkey not in self._storage:
             self._count += 1
-        self._storage[key] = _Entry(
+        self._storage[mkey] = _Entry(
             data=self._dumps(value),
             expire=(time.time() + max_age if max_age else None),
             index_=self._count)
@@ -86,20 +86,20 @@ class MemoryCache(pluca.Cache):
             if self._count > max_entries:
                 break
 
-    def _get(self, key: Any) -> Any:
-        entry = self._storage[key]
+    def _get(self, mkey: Any) -> Any:
+        entry = self._storage[mkey]
         if not entry.is_fresh:
-            del self._storage[key]
+            del self._storage[mkey]
             self._count -= 1
-            raise KeyError(key)
+            raise KeyError(mkey)
         return self._loads(entry.data)
 
-    def _remove(self, key: Any) -> None:
-        entry = self._storage[key]
-        del self._storage[key]
+    def _remove(self, mkey: Any) -> None:
+        entry = self._storage[mkey]
+        del self._storage[mkey]
         self._count -= 1
         if not entry.is_fresh:
-            raise KeyError(key)
+            raise KeyError(mkey)
 
     def _flush(self) -> None:
         self._storage = {}

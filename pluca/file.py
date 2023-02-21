@@ -65,10 +65,10 @@ class FileCache(pluca.Cache):
         import pickle  # pylint: disable=import-outside-toplevel
         return pickle.load(fd)
 
-    def _get_filename(self, khash: str) -> Path:
+    def _get_filename(self, mkey: str) -> Path:
         assert self.cache_dir is not None
         return (self.cache_dir / self.name
-                / f'{_DIR_PREFIX}{khash[0:2]}' / f'{khash[2:]}.dat')
+                / f'{_DIR_PREFIX}{mkey[0:2]}' / f'{mkey[2:]}.dat')
 
     def _write(self, filename: Path, value: Any) -> None:
         temp = filename.with_suffix('.tmp')
@@ -95,8 +95,8 @@ class FileCache(pluca.Cache):
         now = time.time()
         os.utime(filename, times=(now, now + max_age))
 
-    def _get_fresh_key_filename(self, key: Any) -> Optional[Path]:
-        filename = self._get_filename(key)
+    def _get_fresh_key_filename(self, mkey: Any) -> Optional[Path]:
+        filename = self._get_filename(mkey)
         return self._get_fresh_filename(filename)
 
     def _get_fresh_filename(self, filename: Path) -> Optional[Path]:
@@ -111,9 +111,9 @@ class FileCache(pluca.Cache):
 
         return filename
 
-    def _put(self, key: Any, value: Any,
+    def _put(self, mkey: Any, value: Any,
              max_age: Optional[float] = None) -> None:
-        filename = self._get_filename(key)
+        filename = self._get_filename(mkey)
         try:
             self._write(filename, value)
         except FileNotFoundError:
@@ -121,18 +121,18 @@ class FileCache(pluca.Cache):
             self._write(filename, value)
         self._set_max_age(filename, max_age)
 
-    def _get(self, key: Any) -> Any:
-        filename = self._get_fresh_key_filename(key)
+    def _get(self, mkey: Any) -> Any:
+        filename = self._get_fresh_key_filename(mkey)
         if not filename:
-            raise KeyError(key)
+            raise KeyError(mkey)
         with open(filename, 'rb') as fd:
             return self._load(fd)
 
-    def _remove(self, key: Any) -> None:
+    def _remove(self, mkey: Any) -> None:
         try:
-            self._get_filename(key).unlink()
+            self._get_filename(mkey).unlink()
         except FileNotFoundError as ex:
-            raise KeyError(key) from ex
+            raise KeyError(mkey) from ex
 
     def _flush(self) -> None:
         assert self.cache_dir is not None

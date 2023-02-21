@@ -63,16 +63,16 @@ class Cache(abc.ABC):
         return algo.hexdigest()
 
     @abc.abstractmethod
-    def _put(self, key: Any, value: Any,
+    def _put(self, mkey: Any, value: Any,
              max_age: Optional[float] = None) -> None:
         pass
 
     @abc.abstractmethod
-    def _get(self, key: Any) -> Any:
+    def _get(self, mkey: Any) -> Any:
         pass
 
     @abc.abstractmethod
-    def _remove(self, key: Any) -> None:
+    def _remove(self, mkey: Any) -> None:
         pass
 
     def remove(self, key: Any) -> None:

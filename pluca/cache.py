@@ -84,6 +84,16 @@ def remove_all() -> None:
     logger.debug('All caches removed')
 
 
+def flush() -> None:
+    for cache in _caches.values():
+        cache.flush()
+
+
+def gc() -> None:
+    for cache in _caches.values():
+        cache.gc()
+
+
 def basic_config(cls: str = _DEFAULT_BACKEND, **kwargs: Any) -> None:
     remove_all()
     add('', cls=cls, **kwargs)

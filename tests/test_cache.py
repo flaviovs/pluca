@@ -1,6 +1,7 @@
 import sys
 import unittest
 import tempfile
+import time
 
 import pluca.file
 import pluca.null
@@ -187,3 +188,29 @@ class TestCache(unittest.TestCase):
 
         cache = plc.get_cache('pkg.mod')
         self.assertIsInstance(cache, pluca.memory.Cache)
+
+    def test_flush(self) -> None:
+        plc.add(None, 'memory')
+        plc.add('mod', 'file')
+
+        plc.get_cache().put('foo', 'bar')
+        plc.get_cache('mod').put('zee', 'lee')
+
+        plc.flush()
+
+        self.assertFalse(plc.get_cache().has('foo'))
+        self.assertFalse(plc.get_cache('mod').has('zee'))
+
+    def test_gc(self) -> None:
+        plc.add(None, 'memory')
+        plc.add('mod', 'file')
+
+        plc.get_cache().put('foo', 'bar', max_age=1)
+        plc.get_cache('mod').put('zee', 'lee', max_age=1)
+
+        time.sleep(1)
+
+        plc.gc()
+
+        self.assertFalse(plc.get_cache().has('foo'))
+        self.assertFalse(plc.get_cache('mod').has('zee'))

@@ -336,7 +336,7 @@ and packages hierarchically, the API allows for fine-grained cache
 configuration without any coupling between applications and libraries.
 
 
-## Setting up the Global Cache API in an application
+## Using the Global Cache API in an application
 
 The quickest way to configure the API for the most common use case of
 a single application using a single cache, you can just call
@@ -494,6 +494,15 @@ To remove all cache entries and effectively reset the Global Cache
 API, call `pluca.cache.remove_all()`:
 
     >>> pluca.cache.remove_all()
+
+
+### Flushing, garbage collection
+
+You can do garbage colletion and flush all Global Cache API caches at
+once:
+
+    >> pluca.cache.flush()
+    >> pluca.cache.gc()
 
 
 Caveats

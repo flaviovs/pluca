@@ -61,7 +61,7 @@ disable = [
 bad-functions = ["print"]
 
 [tool.taskipy.tasks]
-test = "python -m doctest README.md && python -m unittest tests/test_*.py"
+test = "python -m unittest"
 lint = "flake8 && mypy && pylint ."
 pre-commit = "task lint"
 pre-push = "task lint && task test"

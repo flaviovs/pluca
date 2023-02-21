@@ -105,7 +105,10 @@ def flush() -> None:
 
 def gc() -> None:
     for cache in _caches.values():
-        cache.gc()
+        try:
+            cache.gc()
+        except NotImplementedError:
+            pass
 
 
 def basic_config(cls: str = _DEFAULT_BACKEND, **kwargs: Any) -> None:

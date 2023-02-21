@@ -45,6 +45,13 @@ class CacheTester(abc.ABC, _BaseClass):
         self.assertEqual(cache.get(1), value1)
         self.assertEqual(cache.get('1'), value2)
 
+    def test_put_get_fresh(self) -> None:
+        cache = self.get_cache()
+
+        cache.put('foo', 'bar', max_age=10)  # Expire in 10 seconds.
+
+        self.assertEqual(cache.get('foo'), 'bar')
+
     def test_get_default(self) -> None:
         cache = self.get_cache()
         self.assertEqual(cache.get('nonexistent', 'default'), 'default')

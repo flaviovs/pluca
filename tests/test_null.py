@@ -63,6 +63,7 @@ class TestNull(CacheTester, unittest.TestCase):
         pass
 
     test_put_get_check_key_types = _pass
+    test_put_get_fresh = _pass
     test_put_tuple_key = _pass
     test_put_list_key = _pass
     test_put_dict_key = _pass

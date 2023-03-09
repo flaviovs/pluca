@@ -27,7 +27,8 @@ class TestUtils(unittest.TestCase):
     def test_create_cachedir_dir_force(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             temp_path = Path(temp)
-            (temp_path / 'CACHEDIR.TAG').write_text('Not a signature')
+            (temp_path / 'CACHEDIR.TAG').write_text('Not a signature',
+                                                    encoding='utf-8')
             plu.create_cachedir_tag(temp_path, force=True)
             self._assert_cache_dir_tag(temp_path)
 

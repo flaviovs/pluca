@@ -19,11 +19,11 @@ dev = [
   "flake8-docstrings",
   "flake8-tidy-imports",
   "flake8-walrus",
-  'flake8',
-  'flit',
-  'mypy',
-  'pylint',
-  'taskipy',
+  "flake8",
+  "flit",
+  "mypy",
+  "pylint",
+  "taskipy",
 ]
 
 [build-system]
@@ -37,29 +37,17 @@ files = ["pluca", "tests"]
 show_error_codes = true
 strict = true
 
-[[tool.mypy.overrides]]
-module = [
-       "appdirs",
-       "mysql",
-       "mysql.connector",
-       "postgresql",
-       "postgresql.driver",
-       "postgresql.driver.dbapi20",
-       "setuptools",
-       ]
-ignore_missing_imports = true
-
 [tool.pylint.master]
-ignore-paths = ['.git', '.venv']
+ignore-paths = [".git", ".venv"]
 ignore-patterns = '^\.#'
 recursive = true
 load-plugins = [
-	     'pylint.extensions.bad_builtin',
-	     'pylint.extensions.check_elif',
-	     'pylint.extensions.docparams',
-	     'pylint.extensions.docstyle',
-	     'pylint.extensions.mccabe',
-	     'pylint.extensions.overlapping_exceptions',
+  "pylint.extensions.bad_builtin",
+  "pylint.extensions.check_elif",
+  "pylint.extensions.docparams",
+  "pylint.extensions.docstyle",
+  "pylint.extensions.mccabe",
+  "pylint.extensions.overlapping_exceptions",
 ]
 
 [tool.pylint.basic]
@@ -67,12 +55,12 @@ jobs = 0
 
 # Good variable names which should always be accepted, separated by a comma.
 good-names = [
-	   'i',
-	   'db',
-	   'ex',
-	   'fd',
-	   'gc',
-	   'nr',
+  "i",
+  "db",
+  "ex",
+  "fd",
+  "gc",
+  "nr",
 ]
 
 [tool.pylint.variables]
@@ -80,9 +68,9 @@ init-import = true
 
 [tool.pylint.messages_control]
 disable = [
-        "missing-function-docstring",
-        "missing-module-docstring",
-        "missing-class-docstring",
+  "missing-function-docstring",
+  "missing-module-docstring",
+  "missing-class-docstring",
 ]
 
 [tool.pylint.deprecated_builtins]

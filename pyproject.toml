@@ -37,6 +37,17 @@ files = ["pluca", "tests"]
 show_error_codes = true
 strict = true
 
+[[tool.mypy.overrides]]
+module = [
+  "appdirs",
+  "mysql",
+  "mysql.connector",
+  "postgresql",
+  "postgresql.driver",
+  "postgresql.driver.dbapi20",
+]
+ignore_missing_imports = true
+
 [tool.pylint.master]
 ignore-paths = [".git", ".venv"]
 ignore-patterns = '^\.#'

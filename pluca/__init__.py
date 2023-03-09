@@ -1,9 +1,10 @@
+"""Pluggable Cache Architecture for Python."""
 import abc
 from functools import wraps, partial
 from typing import (Optional, Any, Iterable, Mapping, Callable,
                     List, Tuple, Union)
 
-__version__ = '0.6.0'
+__version__ = '0.6.2'
 
 
 class CacheError(Exception):

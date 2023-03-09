@@ -1,5 +1,3 @@
 __pycache__
-/.mypy.cache
+/.mypy_cache
 /dist
-*.egg-info
-setup.py

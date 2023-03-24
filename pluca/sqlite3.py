@@ -20,7 +20,7 @@ class SQLite3Cache(SqlCache):
         filename: The SQL database file name (pass ":memory:" for a
             in-memory database).
         pragma: A {key: value} mapping of PRAGMA directives to be set
-            on the conncetion.
+            on the connection.
         **kwargs: All other arguments are passed unchanged to
             `sqlite3.connect()`.
 

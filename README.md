@@ -1,7 +1,7 @@
-Plugable cache architecture for Python
+Pluggable cache architecture for Python
 =======================================
 
-*pluca* is a plugable cache architecture for Python 3
+*pluca* is a pluggable cache architecture for Python 3
 applications. The package provides an unified interface to several
 cache implementations, which allows an application to switch cache
 back-ends on an as-needed basis with minimal changes.
@@ -498,7 +498,7 @@ API, call `pluca.cache.remove_all()`:
 
 ### Flushing, garbage collection, shutdown
 
-You can do garbage colletion and flush all Global Cache API caches at
+You can do garbage collection and flush all Global Cache API caches at
 once:
 
     >> pluca.cache.flush()

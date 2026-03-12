@@ -1,5 +1,6 @@
 
 import argparse
+import dbm.dumb
 import gc
 import os
 import random
@@ -7,7 +8,6 @@ import string
 import sys
 import time
 import tempfile
-import warnings
 from typing import Any, NamedTuple
 
 import pluca
@@ -164,33 +164,10 @@ def _main() -> None:
     benchmark('SQLite :memory:',
               args.entries, pluca.sqlite3.Cache, filename=':memory:')
 
-    try:
-        import dbm.gnu  # pylint: disable=import-outside-toplevel
-        with tempfile.TemporaryDirectory() as tempdir:
-            dbg = dbm.gnu.open(f'{tempdir}/db', 'n')
-            benchmark('DMB gnu', args.entries, pluca.dbm.Cache, db=dbg)
-            dbg.close()
-    except ModuleNotFoundError as ex:
-        warnings.warn(f'Could not benchmark dbm.gnu: {ex}')
-
-    try:
-        import dbm.ndbm  # pylint: disable=import-outside-toplevel
-        with tempfile.TemporaryDirectory() as tempdir:
-            # pylint: disable-next=no-member
-            dbn = dbm.ndbm.open(f'{tempdir}/db', 'n')
-            benchmark('DMB ndbm', args.entries, pluca.dbm.Cache, db=dbn)
-            dbn.close()
-    except ModuleNotFoundError as ex:
-        warnings.warn(f'Could not benchmark dbm.ndbm: {ex}')
-
-    try:
-        import dbm.dumb  # pylint: disable=import-outside-toplevel
-        with tempfile.TemporaryDirectory() as tempdir:
-            dbd = dbm.dumb.open(f'{tempdir}/db', 'n')
-            benchmark('DMB dumb', args.entries, pluca.dbm.Cache, db=dbd)
-            dbd.close()
-    except ModuleNotFoundError as ex:
-        warnings.warn(f'Could not benchmark dbm.dumb: {ex}')
+    with tempfile.TemporaryDirectory() as tempdir:
+        dbd = dbm.dumb.open(f'{tempdir}/db', 'n')
+        benchmark('DBM dumb', args.entries, pluca.dbm.Cache, db=dbd)
+        dbd.close()
 
 
 if __name__ == '__main__':

@@ -600,6 +600,9 @@ $ python -m pluca.benchmark
 
 Pass `-h` to see the benchmark options.
 
+For deterministic stdlib-only behavior across platforms, DBM benchmarking
+uses `dbm.dumb`.
+
 
 Issues? Bugs? Suggestions?
 --------------------------

@@ -1,7 +1,7 @@
+import dbm
 import tempfile
 import unittest
 from pathlib import Path
-from types import ModuleType
 
 import pluca
 import pluca.dbm
@@ -11,13 +11,11 @@ from pluca.test import CacheTester
 class _TestMixin:
     _tempdir: tempfile.TemporaryDirectory  # type: ignore [type-arg]
 
-    def _open_db(self, module: ModuleType) -> None:
+    def _open_db(self) -> None:
         # pylint: disable-next=consider-using-with
         assert self._tempdir is not None
 
-        assert hasattr(module, 'open')
-        self._db = module.open(  # xtype: ignore [attr-defined]
-            f'{self._tempdir.name}/test', 'n')
+        self._db = dbm.open(f'{self._tempdir.name}/test', 'n')
 
     def tearDown(self) -> None:  # pylint: disable=invalid-name
         self._db.close()
@@ -35,46 +33,10 @@ class _TestMixin:
         cls._tempdir.cleanup()
 
 
-class TestDbmGnu(_TestMixin, CacheTester, unittest.TestCase):
+class TestDbm(_TestMixin, CacheTester, unittest.TestCase):
 
     def setUp(self) -> None:
-        try:
-            import dbm.gnu  # pylint: disable=import-outside-toplevel
-        except ImportError as ex:
-            raise unittest.SkipTest(str(ex)) from ex
-        self._open_db(dbm.gnu)
-
-    def test_put_max_age_zero(self) -> None:
-        cache = self.get_cache()
-        cache.put('foo', 'bar', max_age=0)
-        with self.assertRaises(KeyError):
-            cache.get('foo')
-
-
-class TestDbmNdbm(_TestMixin, CacheTester, unittest.TestCase):
-
-    def setUp(self) -> None:
-        try:
-            import dbm.ndbm  # pylint: disable=import-outside-toplevel
-        except ImportError as ex:
-            raise unittest.SkipTest(str(ex)) from ex
-        self._open_db(dbm.ndbm)
-
-    def test_put_max_age_zero(self) -> None:
-        cache = self.get_cache()
-        cache.put('foo', 'bar', max_age=0)
-        with self.assertRaises(KeyError):
-            cache.get('foo')
-
-
-class TestDbmDumb(_TestMixin, CacheTester, unittest.TestCase):
-
-    def setUp(self) -> None:
-        try:
-            import dbm.dumb  # pylint: disable=import-outside-toplevel
-        except ImportError as ex:
-            raise unittest.SkipTest(str(ex)) from ex
-        self._open_db(dbm.dumb)
+        self._open_db()
 
     def test_put_max_age_zero(self) -> None:
         cache = self.get_cache()

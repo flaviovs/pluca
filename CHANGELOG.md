@@ -45,12 +45,15 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
   subclasses.
 - **BC BREAK:** Core SQL support no longer includes PostgreSQL and MySQL
   specific behavior. PostgreSQL/MySQL support will move to separate packages.
+- **BC BREAK:** Removed the generic `pluca.sql` backend from core.
+  Core SQL cache support is now SQLite-only via `pluca.sqlite3`.
 - Packaging/build system moved to Flit.
 
 ### Removed
 
 - PostgreSQL/MySQL integration tests from the core repository.
 - Docker-based test infrastructure used for PostgreSQL/MySQL integration tests.
+- The `pluca.sql` module from the core package.
 
 ## [0.6.0] - 2023-02-17
 

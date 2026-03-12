@@ -1,11 +1,12 @@
 import sqlite3
+import time
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from .sql import SqlCache
+import pluca
 
 
-class SQLite3Cache(SqlCache):
+class SQLite3Cache(pluca.Cache):
     """SQLite3 cache for pluca.
 
     This cache store entries in a SQLite3 database.
@@ -27,12 +28,16 @@ class SQLite3Cache(SqlCache):
 
     """
 
-    # pylint: disable-next=too-many-arguments
     def __init__(self,
                  filename: str,
                  pragma: Mapping[str, str | float | bool] | None = None,
                  **kwargs: Any) -> None:
-        super().__init__(sqlite3.connect(filename, **kwargs))
+        self._conn = sqlite3.connect(filename, **kwargs)
+        self._table = 'cache'
+        self._k_col = 'k'
+        self._v_col = 'v'
+        self._exp_col = 'expires'
+        self._ph = '?'
 
         if pragma:
             for (name, value) in pragma.items():
@@ -48,7 +53,7 @@ class SQLite3Cache(SqlCache):
                 f'table={self._table!r}, '
                 f'k_column={self._k_col!r}, '
                 f'v_column={self._v_col!r}, '
-                f'expires_column={self._exp_col!r}')
+                f'expires_column={self._exp_col!r})')
 
     def __check_table(self) -> None:
         self._conn.execute(f'CREATE TABLE IF NOT EXISTS {self._table} ('
@@ -59,6 +64,62 @@ class SQLite3Cache(SqlCache):
     def _commit(self) -> None:
         if self._conn.in_transaction:
             self._conn.execute('COMMIT')
+
+    def _put(self, mkey: Any, value: Any,
+             max_age: float | None = None) -> None:
+        svalue = self._dumps(value)
+        expires = None if max_age is None else time.time() + max_age
+
+        cur = self._conn.cursor()
+        cur.execute(f'INSERT INTO {self._table} '
+                    f'({self._k_col}, {self._v_col}, {self._exp_col}) '
+                    f'VALUES ({self._ph}, {self._ph}, {self._ph}) '
+                    f'ON CONFLICT({self._k_col}) DO UPDATE SET '
+                    f'{self._v_col} = {self._ph}, '
+                    f'{self._exp_col} = {self._ph}',
+                    (mkey, svalue, expires, svalue, expires))
+        cur.close()
+
+    def _get(self, mkey: Any) -> Any:
+        cur = self._conn.cursor()
+        cur.execute(f'SELECT {self._v_col}, {self._exp_col} '
+                    f'FROM {self._table} '
+                    f'WHERE {self._k_col} = {self._ph} '
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph})',
+                    (mkey, time.time()))
+        row = cur.fetchone()
+        cur.close()
+        if not row:
+            raise KeyError(mkey)
+        return self._loads(row[0])
+
+    def _remove(self, mkey: Any) -> None:
+        cur = self._conn.cursor()
+        cur.execute(f'DELETE FROM {self._table} '
+                    f'WHERE {self._k_col} = {self._ph}',
+                    (mkey,))
+        rowcount = cur.rowcount
+        cur.close()
+        if rowcount == 0:
+            raise KeyError(mkey)
+
+    def _flush(self) -> None:
+        cur = self._conn.cursor()
+        cur.execute(f'DELETE FROM {self._table}')
+        cur.close()
+
+    def _has(self, key: Any) -> bool:
+        cur = self._conn.cursor()
+        cur.execute('SELECT EXISTS('
+                    f'SELECT * FROM {self._table} '
+                    f'WHERE {self._k_col} = {self._ph} '
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph}))',
+                    (key, time.time()))
+        has = bool(cur.fetchone()[0])
+        cur.close()
+        return has
 
     def put(self, key: Any, value: Any,
             max_age: float | None = None) -> None:
@@ -103,16 +164,71 @@ class SQLite3Cache(SqlCache):
             keys: Iterable of entry keys.
 
         """
-        super().remove_many(keys)
+        items = tuple(self._map_key(k) for k in keys)
+        if not items:
+            return
+
+        cur = self._conn.cursor()
+        cur.execute(f'DELETE FROM {self._table} '
+                    f'WHERE {self._k_col} '
+                    f'IN ({", ".join([self._ph] * len(items))})',
+                    items)
+        cur.close()
         self._commit()
 
-    def _flush(self) -> None:
-        super()._flush()
+    def get_many(self, keys: Iterable[Any],
+                 default: Any = ...) -> list[tuple[Any, Any]]:
+        """Fetch multiple keys in one query.
+
+        Args:
+            keys: Iterable of cache keys.
+            default: Value to use for missing keys. If omitted, missing keys
+                are excluded.
+
+        Returns:
+            A list of ``(key, value)`` tuples.
+
+        """
+        all_keys = {self._map_key(k): k for k in keys}
+        if not all_keys:
+            return []
+
+        in_list = ', '.join([self._ph] * len(all_keys))
+        args: list[Any] = list(all_keys.keys())
+        args.append(time.time())
+
+        res = []
+
+        cur = self._conn.cursor()
+        cur.execute(f'SELECT {self._k_col}, {self._v_col} '
+                    f'FROM {self._table} '
+                    f'WHERE {self._k_col} IN ({in_list}) '
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph})',
+                    tuple(args))
+
+        for row in cur.fetchall():
+            key = all_keys.pop(row[0])
+            res.append((key, self._loads(row[1])))
+        cur.close()
+
+        if default is not Ellipsis:
+            res.extend((k, default) for k in all_keys.values())
+
+        return res
+
+    def flush(self) -> None:
+        """Remove all entries and commit when needed."""
+        super().flush()
         self._commit()
 
     def gc(self) -> None:
         """Delete expired rows, commit, and optimize the database."""
-        super().gc()
+        cur = self._conn.cursor()
+        cur.execute(f'DELETE FROM {self._table} '
+                    f'WHERE {self._exp_col} <= {self._ph}',
+                    (time.time(),))
+        cur.close()
         self._commit()
         self._conn.execute('PRAGMA optimize')
 

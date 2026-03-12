@@ -573,10 +573,9 @@ These are the cache back-ends that come with the _pluca_ package:
 
 - *null* - the null cache - `get()` always raises _KeyError_.
 
-- *sql* - store cache entries in SQL databases.
+- *sqlite3* - store cache entries in a SQLite3 database.
 
-- *sqlite3* - store cache entries in a SQLite3 database. Based on the
-  _sql_ back-end, but with SQLite3 specific functionalities.
+The core package supports SQLite for SQL storage.
 
 PostgreSQL and MySQL support are no longer part of the core package and
 will be provided by separate packages.

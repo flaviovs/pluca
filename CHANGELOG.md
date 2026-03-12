@@ -51,6 +51,9 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
   variants are unavailable.
 - `get_child(None, child)` and `get_child('', child)` now resolve the same
   node as `get_cache(child)` instead of building a leading-dot path.
+- `tests.test_utils.TestUtils._assert_cache_dir_tag` now checks
+  `Path.is_file()` correctly, so missing `CACHEDIR.TAG` files fail with a
+  clear assertion.
 
 ### Changed
 

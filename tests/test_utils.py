@@ -36,7 +36,7 @@ class TestUtils(unittest.TestCase):
                               temp: Path, name: str = 'pluca cache') -> None:
 
         path = temp / 'CACHEDIR.TAG'
-        self.assertTrue(path.is_file, f'Not found: {path}')
+        self.assertTrue(path.is_file(), f'Not found: {path}')
 
         with open(path, 'r', encoding='utf-8') as fd:
             lines = fd.readlines()

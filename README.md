@@ -420,9 +420,13 @@ Here, `node` is the cache node name. `cls` indicates the cache class
 you want to instantiate for that node.
 
 The `cls` parameter must be a fully-qualified class name (for example,
-`mycustomcache.Cache`). If `cls` is a string with no “.” (dot) in it,
+`mycustomcache.Cache`). If `cls` is a string with no "." (dot) in it,
 i is assumed to be a cache class from the the standard _pluca_ package
 — for example, `memory` is the same as `pluca.memory.Cache`.
+
+Class paths are dynamic imports and should be treated as trusted input
+only. Do not load cache class names from untrusted configuration unless
+you also enforce an allowlist.
 
 By default, caches will reuse previously created instances with the
 same `cls` name and arguments. For example, the two `get_cache()`
@@ -472,6 +476,14 @@ You can also configure the API using a dict-like object using
     >>> pluca.cache.get_cache('mod')
     NullCache()
 
+To restrict dynamic class loading, pass `allowed_class_modules`. This
+accepts module prefixes, so `('pluca',)` allows classes under
+`pluca.*`:
+
+    >>> pluca.cache.dict_config({
+    ...     'class': 'memory',
+    ... }, allowed_class_modules=('pluca',))
+
 Values loaded from INI files are parsed conservatively before they are
 passed to cache constructors: `true`/`false` become booleans, integer
 and floating-point literals become numbers, and any other value is kept
@@ -504,6 +516,11 @@ provided. Heres an example:
     >>>
     >>> pluca.cache.get_cache('mod')
     NullCache()
+
+The same restriction is available for INI-based configuration:
+
+    >>> pluca.cache.file_config(temp.name,
+    ...                         allowed_class_modules=('pluca',))
 
 
 ### Removing caches

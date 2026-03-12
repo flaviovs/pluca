@@ -40,6 +40,7 @@ def _coerce_file_config_section(
 
 
 def add(node: str | None, cls: str, reuse: bool = True,
+        allowed_class_modules: tuple[str, ...] | None = None,
         **kwargs: Any) -> None:
     """Register a cache backend for a node.
 
@@ -49,6 +50,8 @@ def add(node: str | None, cls: str, reuse: bool = True,
             ``pluca.<name>.Cache``.
         reuse: Reuse an existing cache instance with identical class and
             arguments when available.
+        allowed_class_modules: Optional tuple of allowed module prefixes used
+            to validate ``cls`` before importing.
         **kwargs: Named arguments passed to the cache factory.
 
     Raises:
@@ -71,7 +74,9 @@ def add(node: str | None, cls: str, reuse: bool = True,
     cache: Cache | None = _nodes.get(node_key, None) if reuse else None
 
     if not cache:
-        cache = create_cache(cls, **kwargs)
+        cache = create_cache(cls,
+                             allowed_modules=allowed_class_modules,
+                             **kwargs)
 
     if node and ('',) not in _caches:
         # No root cache.
@@ -194,24 +199,33 @@ def gc() -> None:
             pass
 
 
-def basic_config(cls: str = _DEFAULT_BACKEND, **kwargs: Any) -> None:
+def basic_config(cls: str = _DEFAULT_BACKEND,
+                 allowed_class_modules: tuple[str, ...] | None = None,
+                 **kwargs: Any) -> None:
     """Configure only the root cache.
 
     Args:
         cls: Cache factory path or short backend name.
+        allowed_class_modules: Optional tuple of allowed module prefixes used
+            to validate ``cls`` before importing.
         **kwargs: Named arguments passed to the cache factory.
 
     """
     remove_all()
-    add('', cls=cls, **kwargs)
+    add('', cls=cls,
+        allowed_class_modules=allowed_class_modules,
+        **kwargs)
 
 
-def dict_config(config: Mapping[str, Any]) -> None:
+def dict_config(config: Mapping[str, Any],
+                allowed_class_modules: tuple[str, ...] | None = None) -> None:
     """Configure cache nodes from a mapping.
 
     Args:
         config: Mapping with root cache options and optional ``caches`` child
             mapping where each key is a node name.
+        allowed_class_modules: Optional tuple of allowed module prefixes used
+            to validate configured ``class`` paths before importing.
 
     """
     config = dict(config)
@@ -221,20 +235,28 @@ def dict_config(config: Mapping[str, Any]) -> None:
     remove_all()
 
     cls = config.pop('class', _DEFAULT_BACKEND)
-    add('', cls=cls, **config)
+    add('', cls=cls,
+        allowed_class_modules=allowed_class_modules,
+        **config)
 
     for node, cfg in caches.items():
         cfg = dict(cfg)
         cls = cfg.pop('class', _DEFAULT_BACKEND)
-        add(node, cls=cls, **cfg)
+        add(node, cls=cls,
+            allowed_class_modules=allowed_class_modules,
+            **cfg)
 
 
-def file_config(filename: str, encoding: str | None = None) -> None:
+def file_config(filename: str,
+                encoding: str | None = None,
+                allowed_class_modules: tuple[str, ...] | None = None) -> None:
     """Configure cache nodes from an INI-style file.
 
     Args:
         filename: Configuration file path.
         encoding: Optional file encoding.
+        allowed_class_modules: Optional tuple of allowed module prefixes used
+            to validate configured ``class`` paths before importing.
 
     """
     import configparser  # pylint: disable=import-outside-toplevel
@@ -250,9 +272,13 @@ def file_config(filename: str, encoding: str | None = None) -> None:
         section = {}
 
     cls = section.pop('class', _DEFAULT_BACKEND)
-    add('', cls=cls, reuse=False, **_coerce_file_config_section(section))
+    add('', cls=cls, reuse=False,
+        allowed_class_modules=allowed_class_modules,
+        **_coerce_file_config_section(section))
 
     for name in filter(lambda x: x != '__root__', config.sections()):
         cfg = dict(config[name])
         cls = cfg.pop('class', _DEFAULT_BACKEND)
-        add(name, cls=cls, **_coerce_file_config_section(cfg))
+        add(name, cls=cls,
+            allowed_class_modules=allowed_class_modules,
+            **_coerce_file_config_section(cfg))

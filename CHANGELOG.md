@@ -19,6 +19,8 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 - `None` can now be used as an alias for the root/global cache.
 - DBM backend support for `pathlib.Path` values.
 - A `task spellcheck` command powered by `codespell`.
+- Optional class-loading allowlists for dynamic cache configuration APIs
+  (`dict_config()`, `file_config()`, and composite cache config loading).
 
 ### Fixed
 

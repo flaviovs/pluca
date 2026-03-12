@@ -158,6 +158,17 @@ class TestCache(unittest.TestCase):
         cache = plc.get_cache('pkg.mod')
         self.assertIsInstance(cache, pluca.memory.Cache)
 
+    def test_dict_config_allowed_class_modules(self) -> None:
+        with self.assertRaises(ValueError):
+            plc.dict_config({
+                'class': 'tests.test_cache._ConfigProbeCache',
+            }, allowed_class_modules=('pluca',))
+
+        plc.dict_config({
+            'class': 'tests.test_cache._ConfigProbeCache',
+        }, allowed_class_modules=('tests',))
+        self.assertIsInstance(plc.get_cache(), _ConfigProbeCache)
+
     def test_reconfig_basic(self) -> None:
         plc.basic_config('file')
         plc.basic_config('null')
@@ -208,6 +219,31 @@ class TestCache(unittest.TestCase):
         mem_cache.put('b', 2)
         mem_cache.put('c', 3)
         self.assertTrue(mem_cache.has('c'))
+
+    def test_file_config_allowed_class_modules(self) -> None:
+        # pylint: disable-next=consider-using-with
+        temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
+        temp.write('''
+        [__root__]
+        class = tests.test_cache._ConfigProbeCache
+        ''')
+        temp.flush()
+        temp.seek(0)
+
+        with self.assertRaises(ValueError):
+            plc.file_config(temp.name, allowed_class_modules=('pluca',))
+
+        plc.file_config(temp.name, allowed_class_modules=('tests',))
+        self.assertIsInstance(plc.get_cache(), _ConfigProbeCache)
+
+    def test_add_allowed_class_modules(self) -> None:
+        with self.assertRaises(ValueError):
+            plc.add(None, 'tests.test_cache._ConfigProbeCache',
+                    allowed_class_modules=('pluca',))
+
+        plc.add(None, 'tests.test_cache._ConfigProbeCache',
+                allowed_class_modules=('tests',))
+        self.assertIsInstance(plc.get_cache(), _ConfigProbeCache)
 
     def test_file_config_value_coercion(self) -> None:
         # pylint: disable-next=consider-using-with

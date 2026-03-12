@@ -10,6 +10,10 @@ import pluca.null
 from pluca.test import CacheTester
 
 
+class _CompositeProbeCache(pluca.null.Cache):
+    pass
+
+
 class TestComposite(CacheTester, unittest.TestCase):
 
     def setUp(self) -> None:
@@ -58,6 +62,27 @@ class TestComposite(CacheTester, unittest.TestCase):
         self.assertEqual(cache1.max_entries, 10)
 
         self.assertIsInstance(cache2, pluca.null.Cache)
+
+    def test_add_cache_config_allowed_class_modules(self) -> None:
+        cache = pluca.comp.Cache()
+
+        with self.assertRaises(ValueError):
+            cache.add_cache_config({
+                'class': 'tests.test_comp._CompositeProbeCache',
+            }, allowed_class_modules=('pluca',))
+
+        cache.add_cache_config({
+            'class': 'tests.test_comp._CompositeProbeCache',
+        }, allowed_class_modules=('tests',))
+
+        self.assertIsInstance(cache.caches[0], _CompositeProbeCache)
+
+    def test_constructor_allowed_class_modules(self) -> None:
+        cache = pluca.comp.Cache(
+            [{'class': 'tests.test_comp._CompositeProbeCache'}],
+            allowed_class_modules=('tests',))
+
+        self.assertIsInstance(cache.caches[0], _CompositeProbeCache)
 
     def test_constructor(self) -> None:
         cache = pluca.comp.Cache([

@@ -60,18 +60,25 @@ class CompositeCache(pluca.Cache):
 
     Args:
         config: List of cache configuration entries.
+        allowed_class_modules: Optional tuple of allowed module prefixes used
+            to validate configured ``class`` paths before importing.
 
     """
 
     def __init__(self,
-                 config: Iterable[Mapping[str, Any]] | None = None) -> None:
+                 config: Iterable[Mapping[str, Any]] | None = None,
+                 allowed_class_modules: tuple[str, ...] | None = None) -> None:
         self._caches: list[pluca.Cache] = []
+        self._allowed_class_modules = allowed_class_modules
 
         if config:
             for cfg in config:
                 self.add_cache_config(cfg)
 
-    def add_cache_config(self, config: Mapping[str, Any]) -> None:
+    def add_cache_config(
+            self,
+            config: Mapping[str, Any],
+            allowed_class_modules: tuple[str, ...] | None = None) -> None:
         """Add a cache via configuration.
 
         This adds a cache entry from a cache specification mapping
@@ -97,11 +104,17 @@ class CompositeCache(pluca.Cache):
 
         Args:
             config: Cache specification mapping.
+            allowed_class_modules: Optional tuple of allowed module prefixes
+                used to validate configured ``class`` paths before importing.
 
         """
         config = dict(config)
         cls = config.pop('class')
-        self.add_cache(create_cache(cls, **config))
+        if allowed_class_modules is None:
+            allowed_class_modules = self._allowed_class_modules
+        self.add_cache(create_cache(cls,
+                                    allowed_modules=allowed_class_modules,
+                                    **config))
 
     def add_cache(self, cache: pluca.Cache) -> None:
         """Add a cache.

@@ -568,6 +568,11 @@ Caveats
 
   So be careful where you store your cached data.
 
+* The `sqlite3` backend only accepts simple SQL identifiers for dynamic
+  names used in statements (for example PRAGMA names). Identifiers must
+  match `[A-Za-z_][A-Za-z0-9_]*`; invalid names raise `ValueError`
+  during cache initialization.
+
 
 Included back-ends
 ------------------

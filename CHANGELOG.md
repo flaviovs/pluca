@@ -41,6 +41,8 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
   `IN ()` SQL regressions.
 - `CompositeCache.remove()` now attempts all tiers before failing, so a
   miss in an upper tier no longer leaves stale values in lower tiers.
+- SQLite3 now validates SQL identifiers used for dynamic names (including
+  PRAGMA directives) and rejects invalid inputs with `ValueError`.
 - Developer-quality fixes: restored missing mypy overrides, fixed test file
   encoding warnings, and cleaned spelling/docs issues.
 - DBM tests are now stdlib-portable and no longer skip when optional DBM

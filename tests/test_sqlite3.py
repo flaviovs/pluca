@@ -32,6 +32,32 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
         # Check proper repr() handling.
         pluca.sqlite3.Cache(':memory:', pragma={'encoding': 'utf-8'})
 
+    def test_pragma_invalid_identifier(self) -> None:
+        expected_error = 'Invalid SQLite PRAGMA ' \
+            'identifier'
+        invalid_names = (
+            'query-only',
+            'query only',
+            'query;drop',
+            '"query_only"',
+            '1query_only',
+            '',
+        )
+        for name in invalid_names:
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(ValueError,
+                                            expected_error):
+                    pluca.sqlite3.Cache(
+                        ':memory:',
+                        pragma={name: True},
+                    )
+
+    def test_pragma_valid_identifier(self) -> None:
+        cache = pluca.sqlite3.Cache(':memory:',
+                                    pragma={'journal_mode': 'WAL'})
+        cache.put('foo', 'bar')
+        self.assertEqual(cache.get('foo'), 'bar')
+
     def test_put_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
             cache = pluca.sqlite3.Cache(ctx.name)

@@ -1,9 +1,18 @@
 import sqlite3
 import time
+import re
 from collections.abc import Iterable, Mapping
 from typing import Any
 
 import pluca
+
+_VALID_IDENTIFIER = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
+
+
+def _validate_identifier(name: str, kind: str) -> str:
+    if not _VALID_IDENTIFIER.fullmatch(name):
+        raise ValueError(f'Invalid SQLite {kind} identifier: {name!r}')
+    return name
 
 
 class SQLite3Cache(pluca.Cache):
@@ -22,7 +31,8 @@ class SQLite3Cache(pluca.Cache):
         filename: The SQL database file name (pass ":memory:" for a
             in-memory database).
         pragma: A {key: value} mapping of PRAGMA directives to be set
-            on the connection.
+            on the connection. Directive names must be valid SQLite
+            identifiers (`[A-Za-z_][A-Za-z0-9_]*`).
         **kwargs: All other arguments are passed unchanged to
             `sqlite3.connect()`.
 
@@ -39,8 +49,14 @@ class SQLite3Cache(pluca.Cache):
         self._exp_col = 'expires'
         self._ph = '?'
 
+        _validate_identifier(self._table, 'table')
+        _validate_identifier(self._k_col, 'column')
+        _validate_identifier(self._v_col, 'column')
+        _validate_identifier(self._exp_col, 'column')
+
         if pragma:
             for (name, value) in pragma.items():
+                _validate_identifier(name, 'PRAGMA')
                 self._conn.execute(f'PRAGMA {name} = {value!r}')
 
         self.__check_table()

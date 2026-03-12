@@ -62,6 +62,10 @@ Use `remove()` to delete entries from the cache:
         ...
     KeyError: 'foo'
 
+On composite caches, `remove()` attempts removal on every configured
+child cache and raises `KeyError` only when the key is missing from all
+tiers.
+
 To test if a entry exists, use `has()`:
 
     >>> cache.put('this', 'is in the cache')

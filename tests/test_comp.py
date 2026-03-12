@@ -145,6 +145,25 @@ class TestComposite(CacheTester, unittest.TestCase):
         self.assertFalse(self._cache2.has('foo'))
         self.assertFalse(self._cache3.has('foo'))
 
+    def test_comp_remove_when_only_lower_tier_has_key(self) -> None:
+        cache = self.get_cache()
+
+        self._cache3.put('foo', 'bar')
+
+        cache.remove('foo')
+
+        self.assertFalse(self._cache1.has('foo'))
+        self.assertFalse(self._cache2.has('foo'))
+        self.assertFalse(self._cache3.has('foo'))
+
+    def test_comp_remove_when_key_missing_from_all_tiers(self) -> None:
+        cache = self.get_cache()
+
+        with self.assertRaises(KeyError) as ctx:
+            cache.remove('missing-key')
+
+        self.assertEqual(ctx.exception.args, ('missing-key',))
+
     def test_comp_remove_all(self) -> None:
         cache = self.get_cache()
 

@@ -39,6 +39,8 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 - SQLite3 batch reads/removals now explicitly support empty key iterables,
   and regression tests cover empty list/tuple/generator inputs to prevent
   `IN ()` SQL regressions.
+- `CompositeCache.remove()` now attempts all tiers before failing, so a
+  miss in an upper tier no longer leaves stale values in lower tiers.
 - Developer-quality fixes: restored missing mypy overrides, fixed test file
   encoding warnings, and cleaned spelling/docs issues.
 - DBM tests are now stdlib-portable and no longer skip when optional DBM

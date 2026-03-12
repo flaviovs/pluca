@@ -167,8 +167,15 @@ class CompositeCache(pluca.Cache):
         return value
 
     def _remove(self, mkey: Any) -> None:
+        removed = False
         for cache in self._caches:
-            cache._remove(mkey)  # pylint: disable=protected-access
+            try:
+                cache._remove(mkey)  # pylint: disable=protected-access
+            except KeyError:
+                continue
+            removed = True
+        if not removed:
+            raise KeyError(mkey)
 
     def remove_many(self, keys: Iterable[Any]) -> None:
         """Remove multiple keys from all child caches.

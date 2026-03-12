@@ -12,6 +12,27 @@ _FILE_MAX_AGE = 1_000_000_000
 _DIR_PREFIX = 'cache-'
 
 
+def _validate_name(name: str) -> None:
+    if not name:
+        raise ValueError('Cache name must be a non-empty string')
+    if os.path.isabs(name):
+        raise ValueError(f'Cache name must not be absolute: {name!r}')
+    if '/' in name or '\\' in name:
+        raise ValueError(f'Cache name must not contain path separators: {name!r}')
+    if name in ('.', '..'):
+        raise ValueError(f'Cache name must not contain traversal segments: {name!r}')
+
+
+def _resolve_cache_root(cache_dir: Path, name: str) -> Path:
+    base = cache_dir.resolve()
+    cache_root = (base / name).resolve()
+    try:
+        cache_root.relative_to(base)
+    except ValueError as ex:
+        raise ValueError(f'Invalid cache name: {name!r}') from ex
+    return cache_root
+
+
 class FileCache(pluca.Cache):
     """File cache for pluca.
 
@@ -50,6 +71,9 @@ class FileCache(pluca.Cache):
         if not cache_dir.exists():
             cache_dir.mkdir(parents=True)
 
+        _validate_name(name)
+        self._cache_root = _resolve_cache_root(cache_dir, name)
+
         self.name = name
         self.cache_dir = cache_dir
 
@@ -66,8 +90,7 @@ class FileCache(pluca.Cache):
         return pickle.load(fd)
 
     def _get_filename(self, mkey: str) -> Path:
-        assert self.cache_dir is not None
-        return (self.cache_dir / self.name
+        return (self._cache_root
                 / f'{_DIR_PREFIX}{mkey[0:2]}' / f'{mkey[2:]}.dat')
 
     def _write(self, filename: Path, value: Any) -> None:
@@ -135,8 +158,7 @@ class FileCache(pluca.Cache):
             raise KeyError(mkey) from ex
 
     def _flush(self) -> None:
-        assert self.cache_dir is not None
-        for path in (self.cache_dir / self.name).iterdir():
+        for path in self._cache_root.iterdir():
             if path.name.startswith(_DIR_PREFIX) and path.is_dir():
                 shutil.rmtree(path)
             else:
@@ -153,8 +175,7 @@ class FileCache(pluca.Cache):
                 self._get_fresh_filename(path / entry)
 
     def gc(self) -> None:
-        assert self.cache_dir is not None
-        self._gc_dir(self.cache_dir / self.name)
+        self._gc_dir(self._cache_root)
 
 
 Cache = FileCache

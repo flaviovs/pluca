@@ -422,6 +422,11 @@ To prevent this from happening, pass _False_ on the `reuse` parameter:
 The remaining arguments to the `add()` function are passed unchanged
 to the cache class constructor.
 
+For `pluca.file.Cache`, the `name` argument is treated as a cache
+identifier, not a path. It must be a single safe path segment (for
+example `mycache`): it cannot be absolute, cannot contain `/` or `\\`,
+and cannot be `.` or `..`.
+
     >>> pluca.cache.add('c4', 'file', name='c4', cache_dir='/tmp')
     >>> pluca.cache.get_cache('c4')
     FileCache(name='c4', cache_dir=PosixPath('/tmp'))

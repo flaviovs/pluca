@@ -26,6 +26,44 @@ class TestFile(CacheTester, unittest.TestCase):
     def get_cache(self) -> pluca.Cache:
         return pluca.file.Cache(name='test', cache_dir=self._dir)
 
+    def test_invalid_name_raises_valueerror(self) -> None:
+        assert self._dir is not None
+        invalid_names = (
+            '../escaped',
+            '/tmp/pluca',
+            'dir/name',
+            'dir\\name',
+            '..',
+            '',
+        )
+        for name in invalid_names:
+            with self.subTest(name=name):
+                with self.assertRaises(ValueError):
+                    pluca.file.Cache(name=name, cache_dir=self._dir)
+
+    def test_name_path_traversal_rejected(self) -> None:
+        assert self._dir is not None
+        cache_dir = self._dir / 'cache'
+        cache_dir.mkdir()
+        escaped = self._dir / 'escaped'
+
+        with self.assertRaises(ValueError):
+            pluca.file.Cache(name='../escaped', cache_dir=cache_dir)
+
+        self.assertFalse(escaped.exists())
+
+    def test_valid_custom_name_works(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(name='mycache', cache_dir=self._dir)
+        cache.put('key', 'value')
+        self.assertEqual(cache.get('key'), 'value')
+
+    def test_name_with_double_dot_inside_segment_works(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(name='part1..part2', cache_dir=self._dir)
+        cache.put('key', 'value')
+        self.assertEqual(cache.get('key'), 'value')
+
     def test_flush_empties_dir(self) -> None:
         cache = self.get_cache()
         key1 = uuid.uuid4()

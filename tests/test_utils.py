@@ -2,6 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import pluca
+import pluca.null
 import pluca.utils as plu
 
 
@@ -44,3 +46,37 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(lines[0].strip(),
                          'Signature: 8a477f597d28d172789f06886806bc55')
         self.assertIn(name, lines[1])
+
+    def test_parse_factory_path_explicit(self) -> None:
+        self.assertEqual(
+            plu._parse_factory_path('pluca.null:Cache'),
+            ('pluca.null', 'Cache'))
+
+    def test_parse_factory_path_default_name(self) -> None:
+        self.assertEqual(
+            plu._parse_factory_path('pluca.null'),
+            ('pluca.null', 'Cache'))
+        self.assertEqual(
+            plu._parse_factory_path('pluca.null', default_name='Factory'),
+            ('pluca.null', 'Factory'))
+
+    def test_parse_factory_path_module_with_dots(self) -> None:
+        self.assertEqual(
+            plu._parse_factory_path('pluca_memcache.Cache'),
+            ('pluca_memcache.Cache', 'Cache'))
+
+    def test_parse_factory_path_invalid(self) -> None:
+        invalid = (':Cache', 'pluca.null:', 'a:b:c')
+        for path in invalid:
+            with self.subTest(path=path):
+                with self.assertRaises(ValueError):
+                    plu._parse_factory_path(path)
+
+    def test_create_cache_module_defaults_to_cache(self) -> None:
+        cache = plu.create_cache('pluca.null')
+        self.assertIsInstance(cache, pluca.Cache)
+        self.assertIsInstance(cache, pluca.null.Cache)
+
+    def test_create_cache_explicit_factory(self) -> None:
+        cache = plu.create_cache('pluca.null:Cache')
+        self.assertIsInstance(cache, pluca.null.Cache)

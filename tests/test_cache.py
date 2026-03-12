@@ -30,9 +30,9 @@ class TestCache(unittest.TestCase):
                 pass
 
     def test_add_get(self) -> None:
-        plc.add(None, 'file')
-        plc.add('mod', 'null')
-        plc.add('pkg.mod', 'memory')
+        plc.add(None, 'pluca.file')
+        plc.add('mod', 'pluca.null')
+        plc.add('pkg.mod', 'pluca.memory')
 
         cache = plc.get_cache()
         self.assertIsInstance(cache, pluca.file.Cache)
@@ -47,15 +47,15 @@ class TestCache(unittest.TestCase):
         self.assertIsInstance(cache, pluca.memory.Cache)
 
     def test_add_get_child(self) -> None:
-        plc.add(None, 'file')
-        plc.add('pkg', 'memory')
-        plc.add('pkg.mod', 'null')
+        plc.add(None, 'pluca.file')
+        plc.add('pkg', 'pluca.memory')
+        plc.add('pkg.mod', 'pluca.null')
         cache = plc.get_child('pkg', 'mod')
         self.assertIsInstance(cache, pluca.null.Cache)
 
     def test_get_child_empty_parent(self) -> None:
-        plc.add(None, 'file')
-        plc.add('mod', 'null')
+        plc.add(None, 'pluca.file')
+        plc.add('mod', 'pluca.null')
 
         cache = plc.get_cache('mod')
 
@@ -63,37 +63,37 @@ class TestCache(unittest.TestCase):
         self.assertIs(plc.get_child('', 'mod'), cache)
 
     def test_add_no_root(self) -> None:
-        plc.add('mod', 'null')
+        plc.add('mod', 'pluca.null')
         cache = plc.get_cache('mod')
         self.assertIsInstance(cache, pluca.null.Cache)
         cache = plc.get_cache('nonexistend')
         self.assertIsInstance(cache, pluca.file.Cache)
 
     def test_add_reuse(self) -> None:
-        plc.add(None, 'file')
-        plc.add('mod', 'file')
+        plc.add(None, 'pluca.file')
+        plc.add('mod', 'pluca.file')
 
         root_cache = plc.get_cache()
         mod_cache = plc.get_cache('mod')
         self.assertIs(root_cache, mod_cache)
 
     def test_add_no_reuse(self) -> None:
-        plc.add(None, 'file')
-        plc.add('mod', 'file', reuse=False)
+        plc.add(None, 'pluca.file')
+        plc.add('mod', 'pluca.file', reuse=False)
 
         root_cache = plc.get_cache()
         mod_cache = plc.get_cache('mod')
         self.assertIsNot(root_cache, mod_cache)
 
     def test_add_no_implicit_reuse(self) -> None:
-        plc.add('foo', 'file', name='foo')
-        plc.add('bar', 'file', name='bar')
+        plc.add('foo', 'pluca.file', name='foo')
+        plc.add('bar', 'pluca.file', name='bar')
         self.assertIsNot(plc.get_cache('foo'), plc.get_cache('bar'))
 
     def test_add_dup_name(self) -> None:
-        plc.add('name', 'null')
+        plc.add('name', 'pluca.null')
         with self.assertRaises(ValueError):
-            plc.add('name', 'memory')
+            plc.add('name', 'pluca.memory')
 
     def test_basic_config(self) -> None:
         plc.basic_config()
@@ -102,7 +102,7 @@ class TestCache(unittest.TestCase):
         self.assertIsInstance(cache, pluca.file.Cache)
 
     def test_add_file_locking_none(self) -> None:
-        plc.add(None, 'file', locking=None)
+        plc.add(None, 'pluca.file', locking=None)
         cache = plc.get_cache()
         self.assertIsInstance(cache, pluca.file.Cache)
         file_cache = cast(pluca.file.Cache, cache)
@@ -110,17 +110,17 @@ class TestCache(unittest.TestCase):
 
     def test_add_file_invalid_locking(self) -> None:
         with self.assertRaises(ValueError):
-            plc.add(None, 'file', locking='invalid')
+            plc.add(None, 'pluca.file', locking='invalid')
 
     def test_add_file_locking_mkdir(self) -> None:
-        plc.add(None, 'file', locking='mkdir')
+        plc.add(None, 'pluca.file', locking='mkdir')
         cache = plc.get_cache()
         self.assertIsInstance(cache, pluca.file.Cache)
         file_cache = cast(pluca.file.Cache, cache)
         self.assertEqual(file_cache.locking, 'mkdir')
 
     def test_add_file_locking_mkdir_options(self) -> None:
-        plc.add(None, 'file', locking='mkdir',
+        plc.add(None, 'pluca.file', locking='mkdir',
                 mkdir_stale_age=10,
                 mkdir_wait_timeout=2,
                 mkdir_poll_interval=0.01)
@@ -136,15 +136,15 @@ class TestCache(unittest.TestCase):
         self.assertIsInstance(cache, pluca.file.Cache)
 
     def test_remove(self) -> None:
-        plc.add(None, 'file')
-        plc.add('mod', 'null')
+        plc.add(None, 'pluca.file')
+        plc.add('mod', 'pluca.null')
         plc.remove('mod')
 
         cache = plc.get_cache('mod')
         self.assertIsInstance(cache, pluca.file.Cache)
 
     def test_remove_root(self) -> None:
-        plc.add(None, 'file')
+        plc.add(None, 'pluca.file')
 
         plc.remove()
 
@@ -161,9 +161,9 @@ class TestCache(unittest.TestCase):
         self.assertEqual(ctx.exception.args, ('mod',))
 
     def test_remove_all(self) -> None:
-        plc.add(None, 'null')
-        plc.add('mod', 'null')
-        plc.add('pkg.mod', 'null')
+        plc.add(None, 'pluca.null')
+        plc.add('mod', 'pluca.null')
+        plc.add('pkg.mod', 'pluca.null')
 
         plc.remove_all()
 
@@ -173,13 +173,13 @@ class TestCache(unittest.TestCase):
 
     def test_dict_config(self) -> None:
         plc.dict_config({
-            'class': 'file',
+            'factory': 'pluca.file',
             'caches': {
                 'mod': {
-                    'class': 'null',
+                    'factory': 'pluca.null',
                 },
                 'pkg.mod': {
-                    'class': 'memory',
+                    'factory': 'pluca.memory',
                     'max_entries': 10,
                 },
             },
@@ -200,38 +200,46 @@ class TestCache(unittest.TestCase):
     def test_dict_config_allowed_class_modules(self) -> None:
         with self.assertRaises(ValueError):
             plc.dict_config({
-                'class': 'tests.test_cache._ConfigProbeCache',
+                'factory': 'tests.test_cache:_ConfigProbeCache',
             }, allowed_class_modules=('pluca',))
 
         plc.dict_config({
-            'class': 'tests.test_cache._ConfigProbeCache',
+            'factory': 'tests.test_cache:_ConfigProbeCache',
         }, allowed_class_modules=('tests',))
         self.assertIsInstance(plc.get_cache(), _ConfigProbeCache)
 
     def test_reconfig_basic(self) -> None:
-        plc.basic_config('file')
-        plc.basic_config('null')
+        plc.basic_config('pluca.file')
+        plc.basic_config('pluca.null')
         cache = plc.get_cache('foo')
         self.assertIsInstance(cache, pluca.null.Cache)
 
     def test_reconfig_dict_config(self) -> None:
-        plc.dict_config({'class': 'file'})
-        plc.dict_config({'class': 'null'})
+        plc.dict_config({'factory': 'pluca.file'})
+        plc.dict_config({'factory': 'pluca.null'})
         cache = plc.get_cache('foo')
         self.assertIsInstance(cache, pluca.null.Cache)
+
+    def test_module_only_class_defaults_to_cache(self) -> None:
+        plc.add(None, 'pluca.memory')
+        self.assertIsInstance(plc.get_cache(), pluca.memory.Cache)
+
+    def test_short_name_is_treated_as_module(self) -> None:
+        with self.assertRaises(ModuleNotFoundError):
+            plc.add(None, 'memory')
 
     def test_file_config(self) -> None:
         # pylint: disable-next=consider-using-with
         temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
         temp.write('''
         [__root__]
-        class = file
+        factory = pluca.file
 
         [mod]
-        class = null
+        factory = pluca.null
 
         [pkg.mod]
-        class = memory
+        factory = pluca.memory
         max_entries = 2
         ''')
         temp.flush()
@@ -264,7 +272,7 @@ class TestCache(unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
         temp.write('''
         [__root__]
-        class = file
+        factory = pluca.file
         locking = none
         ''')
         temp.flush()
@@ -281,7 +289,7 @@ class TestCache(unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
         temp.write('''
         [__root__]
-        class = file
+        factory = pluca.file
         locking = mkdir
         mkdir_stale_age = 10
         mkdir_wait_timeout = 2
@@ -304,7 +312,7 @@ class TestCache(unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
         temp.write('''
         [__root__]
-        class = tests.test_cache._ConfigProbeCache
+        factory = tests.test_cache:_ConfigProbeCache
         ''')
         temp.flush()
         temp.seek(0)
@@ -317,10 +325,10 @@ class TestCache(unittest.TestCase):
 
     def test_add_allowed_class_modules(self) -> None:
         with self.assertRaises(ValueError):
-            plc.add(None, 'tests.test_cache._ConfigProbeCache',
+            plc.add(None, 'tests.test_cache:_ConfigProbeCache',
                     allowed_class_modules=('pluca',))
 
-        plc.add(None, 'tests.test_cache._ConfigProbeCache',
+        plc.add(None, 'tests.test_cache:_ConfigProbeCache',
                 allowed_class_modules=('tests',))
         self.assertIsInstance(plc.get_cache(), _ConfigProbeCache)
 
@@ -329,7 +337,7 @@ class TestCache(unittest.TestCase):
         temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
         temp.write('''
         [__root__]
-        class = tests.test_cache._ConfigProbeCache
+        factory = tests.test_cache:_ConfigProbeCache
         enabled = true
         disabled = false
         count = 10
@@ -337,7 +345,7 @@ class TestCache(unittest.TestCase):
         label = cache-v1
 
         [mod]
-        class = tests.test_cache._ConfigProbeCache
+        factory = tests.test_cache:_ConfigProbeCache
         count = 20
         enabled = false
         threshold = 2.5
@@ -366,8 +374,8 @@ class TestCache(unittest.TestCase):
         self.assertEqual(mod_probe.kwargs['label'], 'cache-v2')
 
     def test_flush(self) -> None:
-        plc.add(None, 'memory')
-        plc.add('mod', 'file')
+        plc.add(None, 'pluca.memory')
+        plc.add('mod', 'pluca.file')
 
         plc.get_cache().put('foo', 'bar')
         plc.get_cache('mod').put('zee', 'lee')
@@ -378,8 +386,8 @@ class TestCache(unittest.TestCase):
         self.assertFalse(plc.get_cache('mod').has('zee'))
 
     def test_gc(self) -> None:
-        plc.add(None, 'memory')
-        plc.add('mod', 'file')
+        plc.add(None, 'pluca.memory')
+        plc.add('mod', 'pluca.file')
 
         plc.get_cache().put('foo', 'bar', max_age=1)
         plc.get_cache('mod').put('zee', 'lee', max_age=1)

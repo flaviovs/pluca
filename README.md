@@ -458,23 +458,23 @@ This sets up a file cache as the root cache. If desired, you can use
 another backend:
 
     >>> # Configure a memory cache as the cache root.
-    >>> pluca.cache.basic_config('memory')
+    >>> pluca.cache.basic_config('pluca.memory')
 
 You can also customize the cache object:
 
-    >>> pluca.cache.basic_config('file', cache_dir='/tmp')
+    >>> pluca.cache.basic_config('pluca.file', cache_dir='/tmp')
 
 To disable file locking for a file backend instance:
 
-    >>> pluca.cache.basic_config('file', cache_dir='/tmp', locking=None)
+    >>> pluca.cache.basic_config('pluca.file', cache_dir='/tmp', locking=None)
 
 **Note**: when you call `basic_config()` all existing caches are
 removed before the new one is set up.
 
 To configure additional caches, use `pluca.cache.add()`:
 
-    >>> pluca.cache.add('mod', 'memory', max_entries=100)
-    >>> pluca.cache.add('pkg.foo', 'null')
+    >>> pluca.cache.add('mod', 'pluca.memory', max_entries=100)
+    >>> pluca.cache.add('pkg.foo', 'pluca.null')
 
 This adds two caches — one at “mod“ and another at “pkg.foo“. Now, in
 the “pkg.foo“ module, the call `get_cache(__name__)` will return a
@@ -518,36 +518,38 @@ for you.
 The function `add()` has the following signature:
 
 ```python
-add(node: str | None, cls: str, reuse: bool = True,
+add(node: str | None, factory: str, reuse: bool = True,
     allowed_class_modules: tuple[str, ...] | None = None, **kwargs: Any)
 ```
 
 Here, `node` is the cache node name. Pass `None` to configure the root
-node explicitly. `cls` indicates the cache factory you want to use for
+node explicitly. `factory` indicates the cache factory you want to use for
 that node.
 
-The `cls` parameter can be a fully-qualified dotted factory path (for
-example, `mycustomcache.Cache`). If `cls` is a string with no "." (dot)
-in it, it is assumed to be a cache class from the standard _pluca_
-package — for example, `memory` is the same as
-`pluca.memory.Cache`.
+The `factory` parameter can be a fully-qualified module path (for example,
+`mycustomcache`). Cache factories are resolved using the
+`pkg.module:Factory` format. If `:Factory` is omitted, `:Cache` is
+assumed. So `mycustomcache` means `mycustomcache:Cache`.
 
-Class paths are dynamic imports and should be treated as trusted input
-only. Do not load cache class names from untrusted configuration unless
+Repository examples intentionally omit `:Cache` and use module paths
+directly.
+
+Factory paths are dynamic imports and should be treated as trusted input
+only. Do not load cache factory names from untrusted configuration unless
 you also enforce an allowlist with `allowed_class_modules`.
 
 By default, caches will reuse previously created instances with the
-same `cls` name and arguments. For example, the two `get_cache()`
+same `factory` and arguments. For example, the two `get_cache()`
 calls below return the same cache object:
 
-    >>> pluca.cache.add('c1', 'file')
-    >>> pluca.cache.add('c2', 'file')
+    >>> pluca.cache.add('c1', 'pluca.file')
+    >>> pluca.cache.add('c2', 'pluca.file')
     >>> pluca.cache.get_cache('c1') is pluca.cache.get_cache('c2')
     True
 
 To prevent this from happening, pass _False_ on the `reuse` parameter:
 
-    >>> pluca.cache.add('c3', 'file', reuse=False)
+    >>> pluca.cache.add('c3', 'pluca.file', reuse=False)
     >>> pluca.cache.get_cache('c2') is pluca.cache.get_cache('c3')
     False
 
@@ -558,7 +560,7 @@ To restrict dynamic class loading, pass `allowed_class_modules`. This
 accepts module prefixes, so `('pluca',)` allows classes under
 `pluca.*`:
 
-    >>> pluca.cache.add('safe', 'memory',
+    >>> pluca.cache.add('safe', 'pluca.memory',
     ...                 allowed_class_modules=('pluca',))
 
 For `pluca.file.Cache`, the `name` argument is treated as a cache
@@ -566,28 +568,28 @@ identifier, not a path. It must be a single safe path segment (for
 example `mycache`): it cannot be absolute, cannot contain `/` or `\\`,
 and cannot be `.` or `..`.
 
-    >>> pluca.cache.add('c4', 'file', name='c4', cache_dir='/tmp')
+    >>> pluca.cache.add('c4', 'pluca.file', name='c4', cache_dir='/tmp')
     >>> pluca.cache.get_cache('c4')  # doctest: +ELLIPSIS
     FileCache(name='c4', cache_dir=PosixPath('/tmp'), locking=...)
 
 You can also explicitly choose locking behavior per file cache:
 
-    >>> pluca.cache.add('c4.nolock', 'file', name='c4_nolock',
+    >>> pluca.cache.add('c4.nolock', 'pluca.file', name='c4_nolock',
     ...                 cache_dir='/tmp', locking=None)
 
 You can also configure the API using a dict-like object using
 `pluca.cache.dict_config()`:
 
     >>> pluca.cache.dict_config({
-    ...     'class': 'memory',  # The root cache.
+    ...     'factory': 'pluca.memory',  # The root cache.
     ...     'max_entries': 10,
     ...
     ...     'caches': {  # Configure extra caches.
     ...         'mod': {
-    ...             'class': 'null',
+    ...             'factory': 'pluca.null',
     ...         },
     ...         'pkg.mod': {
-    ...             'class': 'file',
+    ...             'factory': 'pluca.file',
     ...             'name': 'pkg_mod',
     ...             'cache_dir': '/tmp',
     ...         },
@@ -601,7 +603,7 @@ accepts module prefixes, so `('pluca',)` allows classes under
 `pluca.*`:
 
     >>> pluca.cache.dict_config({
-    ...     'class': 'memory',
+    ...     'factory': 'pluca.memory',
     ... }, allowed_class_modules=('pluca',))
 
 Values loaded from INI files are parsed conservatively before they are
@@ -618,14 +620,14 @@ provided. Here is an example:
     >>> n = temp.write('''
     ...
     ...     [__root__]
-    ...     class = memory
+    ...     factory = pluca.memory
     ...     max_entries = 10
     ...
     ...     [mod]
-    ...     class = null
+    ...     factory = pluca.null
     ...
     ...     [pkg.mod]
-    ...     class = file
+    ...     factory = pluca.file
     ...     name = pkg_mod
     ...     cache_dir = /tmp
     ...
@@ -651,8 +653,8 @@ To remove a configured cache node, call `pluca.cache.remove()`:
 
 Notice that removing a node does not remove its children:
 
-    >>> pluca.cache.add('a.b', 'file')
-    >>> pluca.cache.add('a.b.c', 'file')
+    >>> pluca.cache.add('a.b', 'pluca.file')
+    >>> pluca.cache.add('a.b.c', 'pluca.file')
     >>> pluca.cache.remove('a.b')
     >>> pluca.cache.get_cache('a.b.c')  # doctest: +ELLIPSIS
     FileCache(name=...)
@@ -698,8 +700,8 @@ You can also configure child caches from dict-like configuration
 objects:
 
     >>> cfg_cache = pluca.comp.Cache([
-    ...     {'class': 'pluca.memory.Cache', 'max_entries': 10},
-    ...     {'class': 'pluca.null.Cache'},
+    ...     {'factory': 'pluca.memory', 'max_entries': 10},
+    ...     {'factory': 'pluca.null'},
     ... ])
 
 As with the Global Cache API, composite cache configuration supports

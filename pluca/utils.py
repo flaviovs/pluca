@@ -12,6 +12,23 @@ def _is_module_allowed(module: str, allowed_modules: tuple[str, ...]) -> bool:
     return False
 
 
+def _parse_factory_path(path: str,
+                        default_name: str = 'Cache') -> tuple[str, str]:
+    if path.count(':') > 1:
+        raise ValueError(f'Invalid cache factory path: {path!r}')
+
+    if ':' in path:
+        module, name = path.split(':', 1)
+    else:
+        module = path
+        name = default_name
+
+    if not module or not name:
+        raise ValueError(f'Invalid cache factory path: {path!r}')
+
+    return module, name
+
+
 def create_cachedir_tag(cache_dir: str | Path,
                         name: str | None = 'pluca cache',
                         force: bool = False) -> None:
@@ -37,16 +54,18 @@ def create_cachedir_tag(cache_dir: str | Path,
         pass
 
 
-def create_cache(cls: str,
+def create_cache(factory: str,
                  allowed_modules: tuple[str, ...] | None = None,
                  **kwargs: Any) -> pluca.Cache:
-    """Instantiate a cache object from a dotted factory path.
+    """Instantiate a cache object from a factory path.
 
     Args:
-        cls: Dotted import path to a cache factory.
+        factory: Factory path as ``"module:factory"``. If ``:factory`` is
+            omitted,
+            ``:Cache`` is assumed.
         allowed_modules: Optional tuple of allowed module prefixes for
-            ``cls``. When provided, ``cls`` must resolve to one of those
-            modules or their submodules.
+            ``factory``. When provided, ``factory`` must resolve to one of
+            those modules or their submodules.
         **kwargs: Named arguments passed to the factory.
 
     Returns:
@@ -54,24 +73,24 @@ def create_cache(cls: str,
 
     Raises:
         AttributeError: If the resolved attribute is not callable.
-        ValueError: If ``allowed_modules`` is empty or ``cls`` is outside the
-            configured module allowlist.
+        ValueError: If ``allowed_modules`` is empty or ``factory`` is outside
+            the configured module allowlist.
         TypeError: If the factory result is not a ``pluca.Cache``.
 
     """
-    (module, class_) = cls.rsplit('.', 1)
+    (module, name) = _parse_factory_path(factory)
     if allowed_modules is not None:
         if not allowed_modules:
             raise ValueError('allowed_modules cannot be empty')
         if not _is_module_allowed(module, allowed_modules):
             raise ValueError(
-                f'{cls!r} is not allowed; module must match one of '
+                f'{factory!r} is not allowed; module must match one of '
                 f'{allowed_modules!r}')
     mod = importlib.import_module(module)
-    factory = getattr(mod, class_)
-    if not callable(factory):
-        raise AttributeError(f'{cls} is not callable')
-    cache = factory(**kwargs)
+    factory_obj = getattr(mod, name)
+    if not callable(factory_obj):
+        raise AttributeError(f'{factory} is not callable')
+    cache = factory_obj(**kwargs)
     if not isinstance(cache, pluca.Cache):
-        raise TypeError('f{cls} is not a cache factory')
+        raise TypeError(f'{factory} is not a cache factory')
     return cache

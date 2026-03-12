@@ -11,7 +11,7 @@ _nodes: dict[tuple[str, str], Cache] = {}
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_BACKEND = 'file'
+_DEFAULT_BACKEND = 'pluca.file'
 
 
 def _coerce_file_config_value(value: str) -> Any:
@@ -39,19 +39,19 @@ def _coerce_file_config_section(
             for (name, value) in section.items()}
 
 
-def add(node: str | None, cls: str, reuse: bool = True,
+def add(node: str | None, factory: str, reuse: bool = True,
         allowed_class_modules: tuple[str, ...] | None = None,
         **kwargs: Any) -> None:
     """Register a cache backend for a node.
 
     Args:
         node: Dot-delimited cache node path. ``None`` targets the root node.
-        cls: Fully qualified cache factory path. Short names are resolved as
-            ``pluca.<name>.Cache``.
-        reuse: Reuse an existing cache instance with identical class and
+        factory: Cache factory path in ``"module:factory"`` format. If
+            ``:factory`` is omitted, ``:Cache`` is assumed.
+        reuse: Reuse an existing cache instance with identical factory and
             arguments when available.
         allowed_class_modules: Optional tuple of allowed module prefixes used
-            to validate ``cls`` before importing.
+            to validate ``factory`` before importing.
         **kwargs: Named arguments passed to the cache factory.
 
     Raises:
@@ -66,15 +66,12 @@ def add(node: str | None, cls: str, reuse: bool = True,
     if tnode in _caches:
         raise ValueError(f'A cache named {node!r} already exists')
 
-    if '.' not in cls:
-        cls = f'pluca.{cls}.Cache'
-
-    node_key = (cls, repr(tuple(kwargs.items())))
+    node_key = (factory, repr(tuple(kwargs.items())))
 
     cache: Cache | None = _nodes.get(node_key, None) if reuse else None
 
     if not cache:
-        cache = create_cache(cls,
+        cache = create_cache(factory,
                              allowed_modules=allowed_class_modules,
                              **kwargs)
 
@@ -201,20 +198,21 @@ def gc() -> None:
             pass
 
 
-def basic_config(cls: str = _DEFAULT_BACKEND,
+def basic_config(factory: str = _DEFAULT_BACKEND,
                  allowed_class_modules: tuple[str, ...] | None = None,
                  **kwargs: Any) -> None:
     """Configure only the root cache.
 
     Args:
-        cls: Cache factory path or short backend name.
+        factory: Cache factory path in ``"module:factory"`` format. If
+            ``:factory`` is omitted, ``:Cache`` is assumed.
         allowed_class_modules: Optional tuple of allowed module prefixes used
-            to validate ``cls`` before importing.
+            to validate ``factory`` before importing.
         **kwargs: Named arguments passed to the cache factory.
 
     """
     remove_all()
-    add('', cls=cls,
+    add('', factory=factory,
         allowed_class_modules=allowed_class_modules,
         **kwargs)
 
@@ -224,10 +222,10 @@ def dict_config(config: Mapping[str, Any],
     """Configure cache nodes from a mapping.
 
     Args:
-        config: Mapping with root cache options and optional ``caches`` child
+        config: Mapping with root cache options and optional ``caches``
             mapping where each key is a node name.
         allowed_class_modules: Optional tuple of allowed module prefixes used
-            to validate configured ``class`` paths before importing.
+            to validate configured ``factory`` paths before importing.
 
     """
     config = dict(config)
@@ -236,15 +234,15 @@ def dict_config(config: Mapping[str, Any],
 
     remove_all()
 
-    cls = config.pop('class', _DEFAULT_BACKEND)
-    add('', cls=cls,
+    factory = config.pop('factory', _DEFAULT_BACKEND)
+    add('', factory=factory,
         allowed_class_modules=allowed_class_modules,
         **config)
 
     for node, cfg in caches.items():
         cfg = dict(cfg)
-        cls = cfg.pop('class', _DEFAULT_BACKEND)
-        add(node, cls=cls,
+        factory = cfg.pop('factory', _DEFAULT_BACKEND)
+        add(node, factory=factory,
             allowed_class_modules=allowed_class_modules,
             **cfg)
 
@@ -258,7 +256,7 @@ def file_config(filename: str,
         filename: Configuration file path.
         encoding: Optional file encoding.
         allowed_class_modules: Optional tuple of allowed module prefixes used
-            to validate configured ``class`` paths before importing.
+            to validate configured ``factory`` paths before importing.
 
     """
     import configparser  # pylint: disable=import-outside-toplevel
@@ -273,14 +271,14 @@ def file_config(filename: str,
     except KeyError:
         section = {}
 
-    cls = section.pop('class', _DEFAULT_BACKEND)
-    add('', cls=cls, reuse=False,
+    factory = section.pop('factory', _DEFAULT_BACKEND)
+    add('', factory=factory, reuse=False,
         allowed_class_modules=allowed_class_modules,
         **_coerce_file_config_section(section))
 
     for name in filter(lambda x: x != '__root__', config.sections()):
         cfg = dict(config[name])
-        cls = cfg.pop('class', _DEFAULT_BACKEND)
-        add(name, cls=cls,
+        factory = cfg.pop('factory', _DEFAULT_BACKEND)
+        add(name, factory=factory,
             allowed_class_modules=allowed_class_modules,
             **_coerce_file_config_section(cfg))

@@ -53,7 +53,7 @@ class CompositeCache(pluca.Cache):
     Example:
 
         cache = pluca.comp.Cache([{
-            'class' => 'pluca.memory.Cache']
+            'factory' => 'pluca.memory']
 
     See `add_cache_config()` for details about cache specification
     mappings.
@@ -61,7 +61,7 @@ class CompositeCache(pluca.Cache):
     Args:
         config: List of cache configuration entries.
         allowed_class_modules: Optional tuple of allowed module prefixes used
-            to validate configured ``class`` paths before importing.
+            to validate configured ``factory`` paths before importing.
 
     """
 
@@ -82,10 +82,11 @@ class CompositeCache(pluca.Cache):
         """Add a cache via configuration.
 
         This adds a cache entry from a cache specification mapping
-        (i.e. a dict). The mapping must have a `class` attribute with
-        the fully qualified callable name of a factory function to
-        create the cache. All other keys in the dict are passed to the
-        factory function as named arguments.
+        (i.e. a dict). The mapping must have a `factory` attribute with
+        a cache factory path in ``"module:factory"`` format. If
+        ``:factory`` is omitted, ``:Cache`` is assumed. All other keys
+        in the dict are passed to the factory function as named
+        arguments.
 
         Example:
 
@@ -94,25 +95,25 @@ class CompositeCache(pluca.Cache):
             >>> cache = pluca.comp.Cache()
             >>>
             >>> cache.add_cache_config({
-            ...     'class': 'pluca.memory.Cache',
+            ...     'factory': 'pluca.memory',
             ...     'max_entries': 1_000,
             ... })
             >>> cache.add_cache_config({
-            ...     'class': 'pluca.file.Cache',
+            ...     'factory': 'pluca.file',
             ...     'name': 'mycache',
             ... })
 
         Args:
             config: Cache specification mapping.
             allowed_class_modules: Optional tuple of allowed module prefixes
-                used to validate configured ``class`` paths before importing.
+                used to validate configured ``factory`` paths before importing.
 
         """
         config = dict(config)
-        cls = config.pop('class')
+        factory = config.pop('factory')
         if allowed_class_modules is None:
             allowed_class_modules = self._allowed_class_modules
-        self.add_cache(create_cache(cls,
+        self.add_cache(create_cache(factory,
                                     allowed_modules=allowed_class_modules,
                                     **config))
 

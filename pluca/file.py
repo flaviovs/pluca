@@ -85,7 +85,7 @@ class FileCache(pluca.Cache):
 
     def _dump(self, obj: Any, fd: BinaryIO) -> None:
         import pickle  # pylint: disable=import-outside-toplevel
-        pickle.dump(fd, obj)
+        pickle.dump(obj, fd)
 
     def _load(self, fd: BinaryIO) -> Any:
         import pickle  # pylint: disable=import-outside-toplevel
@@ -105,7 +105,7 @@ class FileCache(pluca.Cache):
             else:
                 break
         try:
-            self._dump(fd, value)
+            self._dump(value, fd)
         except:  # noqa: E722
             temp.unlink()
             raise

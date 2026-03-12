@@ -54,12 +54,6 @@ class SqlCache(pluca.Cache):
         if connection.__class__.__module__ == 'sqlite3':
             self._ph = '?'
             self._put = self._put_on_conflict  # type: ignore [assignment]
-        elif connection.__class__.__module__ == 'postgresql':
-            self._ph = '%s'
-            self._put = self._put_on_conflict  # type: ignore [assignment]
-        elif connection.__class__.__module__ == 'mysql.connector.connection':
-            self._ph = '%s'
-            self._put = self._put_on_duplicate_key  # type: ignore [assignment]
         else:
             self._ph = '%s'
 
@@ -97,21 +91,6 @@ class SqlCache(pluca.Cache):
                     f'({self._k_col}, {self._v_col}, {self._exp_col}) '
                     f'VALUES ({self._ph}, {self._ph}, {self._ph}) '
                     f'ON CONFLICT({self._k_col}) DO UPDATE SET '
-                    f'{self._v_col} = {self._ph}, '
-                    f'{self._exp_col} = {self._ph}',
-                    (key, svalue, expires, svalue, expires))
-        cur.close()
-
-    def _put_on_duplicate_key(self, key: Any, value: Any,
-                              max_age: float | None = None) -> None:
-        svalue = self._dumps(value)
-        expires = None if max_age is None else time.time() + max_age
-
-        cur = self._conn.cursor()
-        cur.execute(f'INSERT INTO {self._table} '
-                    f'({self._k_col}, {self._v_col}, {self._exp_col}) '
-                    f'VALUES ({self._ph}, {self._ph}, {self._ph}) '
-                    f'ON DUPLICATE KEY UPDATE '
                     f'{self._v_col} = {self._ph}, '
                     f'{self._exp_col} = {self._ph}',
                     (key, svalue, expires, svalue, expires))

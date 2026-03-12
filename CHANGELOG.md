@@ -43,7 +43,14 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 - **BC BREAK:** Internal cache ABC method names were standardized (`key` ->
   `mkey`, `flush` -> `_flush`), which may require updates in custom backend
   subclasses.
+- **BC BREAK:** Core SQL support no longer includes PostgreSQL and MySQL
+  specific behavior. PostgreSQL/MySQL support will move to separate packages.
 - Packaging/build system moved to Flit.
+
+### Removed
+
+- PostgreSQL/MySQL integration tests from the core repository.
+- Docker-based test infrastructure used for PostgreSQL/MySQL integration tests.
 
 ## [0.6.0] - 2023-02-17
 

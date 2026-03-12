@@ -578,6 +578,9 @@ These are the cache back-ends that come with the _pluca_ package:
 - *sqlite3* - store cache entries in a SQLite3 database. Based on the
   _sql_ back-end, but with SQLite3 specific functionalities.
 
+PostgreSQL and MySQL support are no longer part of the core package and
+will be provided by separate packages.
+
 To obtain help about those cache back-ends, run
 `help(pluca.MODULE.Cache)`, where _MODULE_ is one of the module names
 above.

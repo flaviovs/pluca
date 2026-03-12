@@ -46,11 +46,6 @@ strict = true
 [[tool.mypy.overrides]]
 module = [
   "appdirs",
-  "mysql",
-  "mysql.connector",
-  "postgresql",
-  "postgresql.driver",
-  "postgresql.driver.dbapi20",
 ]
 ignore_missing_imports = true
 

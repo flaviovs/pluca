@@ -44,6 +44,12 @@ class TestDbmGnu(_TestMixin, CacheTester, unittest.TestCase):
             raise unittest.SkipTest(str(ex)) from ex
         self._open_db(dbm.gnu)
 
+    def test_put_max_age_zero(self) -> None:
+        cache = self.get_cache()
+        cache.put('foo', 'bar', max_age=0)
+        with self.assertRaises(KeyError):
+            cache.get('foo')
+
 
 class TestDbmNdbm(_TestMixin, CacheTester, unittest.TestCase):
 
@@ -54,6 +60,12 @@ class TestDbmNdbm(_TestMixin, CacheTester, unittest.TestCase):
             raise unittest.SkipTest(str(ex)) from ex
         self._open_db(dbm.ndbm)
 
+    def test_put_max_age_zero(self) -> None:
+        cache = self.get_cache()
+        cache.put('foo', 'bar', max_age=0)
+        with self.assertRaises(KeyError):
+            cache.get('foo')
+
 
 class TestDbmDumb(_TestMixin, CacheTester, unittest.TestCase):
 
@@ -63,6 +75,12 @@ class TestDbmDumb(_TestMixin, CacheTester, unittest.TestCase):
         except ImportError as ex:
             raise unittest.SkipTest(str(ex)) from ex
         self._open_db(dbm.dumb)
+
+    def test_put_max_age_zero(self) -> None:
+        cache = self.get_cache()
+        cache.put('foo', 'bar', max_age=0)
+        with self.assertRaises(KeyError):
+            cache.get('foo')
 
 
 class TestGeneric(unittest.TestCase):

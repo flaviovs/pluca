@@ -89,6 +89,9 @@ time:
         ...
     KeyError: 'see-you'
 
+Passing `max_age=0` marks an entry as immediately expired, while
+`max_age=None` keeps the default behavior (no explicit expiration).
+
 Cache keys can be any object (but see _Caveats_ below):
 
     >>> key = (__name__, True, 'this', 'key', 'has', 'more', 'than', 1, 'value')

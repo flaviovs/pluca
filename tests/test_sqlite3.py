@@ -32,6 +32,12 @@ class TestSqlBackEnd(CacheTester, unittest.TestCase):
                      f'{exp_col} FLOAT'
                      ')')
 
+    def test_put_max_age_zero(self) -> None:
+        cache = self.get_cache()
+        cache.put('foo', 'bar', max_age=0)
+        with self.assertRaises(KeyError):
+            cache.get('foo')
+
 
 class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
 

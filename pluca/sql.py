@@ -73,6 +73,7 @@ class SqlCache(pluca.Cache):
 
     def _put(self, mkey: Any, value: Any,
              max_age: float | None = None) -> None:
+        expires = None if max_age is None else time.time() + max_age
         cur = self._conn.cursor()
         cur.execute(f'DELETE FROM {self._table} '
                     f'WHERE {self._k_col} = {self._ph}',
@@ -82,15 +83,14 @@ class SqlCache(pluca.Cache):
         cur.execute(f'INSERT INTO {self._table} '
                     f'({self._k_col}, {self._v_col}, {self._exp_col}) '
                     f'VALUES ({self._ph}, {self._ph}, {self._ph})',
-                    (mkey, self._dumps(value),
-                     time.time() + max_age if max_age else None))
+                    (mkey, self._dumps(value), expires))
         cur.close()
 
     def _put_on_conflict(self, key: Any, value: Any,
                          max_age: float | None = None) -> None:
 
         svalue = self._dumps(value)
-        expires = time.time() + max_age if max_age else None
+        expires = None if max_age is None else time.time() + max_age
 
         cur = self._conn.cursor()
         cur.execute(f'INSERT INTO {self._table} '
@@ -105,7 +105,7 @@ class SqlCache(pluca.Cache):
     def _put_on_duplicate_key(self, key: Any, value: Any,
                               max_age: float | None = None) -> None:
         svalue = self._dumps(value)
-        expires = time.time() + max_age if max_age else None
+        expires = None if max_age is None else time.time() + max_age
 
         cur = self._conn.cursor()
         cur.execute(f'INSERT INTO {self._table} '

@@ -50,3 +50,9 @@ class TestMemory(CacheTester, unittest.TestCase):
         alist[1] = 20
 
         self.assertEqual(cache.get('alist'), [1, 2, 3])
+
+    def test_put_max_age_zero(self) -> None:
+        cache = pluca.memory.Cache()
+        cache.put('foo', 'bar', max_age=0)
+        with self.assertRaises(KeyError):
+            cache.get('foo')

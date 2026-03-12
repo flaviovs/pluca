@@ -27,6 +27,8 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
   implement GC.
 - Root cache removal is now idempotent (safe to call multiple times).
 - DBM now respects `max_age` correctly.
+- `max_age=0` now expires entries immediately across memory, DBM, and SQL
+  backends.
 - Developer-quality fixes: restored missing mypy overrides, fixed test file
   encoding warnings, and cleaned spelling/docs issues.
 

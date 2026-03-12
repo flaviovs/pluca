@@ -57,11 +57,12 @@ class MemoryCache(pluca.Cache):
 
     def _put(self, mkey: Any, value: Any,
              max_age: float | None = None) -> None:
+        expire = None if max_age is None else time.time() + max_age
         if mkey not in self._storage:
             self._count += 1
         self._storage[mkey] = _Entry(
             data=self._dumps(value),
-            expire=(time.time() + max_age if max_age else None),
+            expire=expire,
             index_=self._count)
         if (self.max_entries is not None
                 and self._count > self.max_entries):

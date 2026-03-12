@@ -49,6 +49,8 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
   encoding warnings, and cleaned spelling/docs issues.
 - DBM tests are now stdlib-portable and no longer skip when optional DBM
   variants are unavailable.
+- `get_child(None, child)` and `get_child('', child)` now resolve the same
+  node as `get_cache(child)` instead of building a leading-dot path.
 
 ### Changed
 

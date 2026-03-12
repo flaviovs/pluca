@@ -398,6 +398,17 @@ Calling `get_cache()` returns the root cache:
     >>> cache  # doctest: +ELLIPSIS
     FileCache(name=..., cache_dir=...)
 
+To resolve a direct child cache from a parent node, use `get_child()`:
+
+    >>> pluca.cache.get_child('pkg', 'mod') is pluca.cache.get_cache('pkg.mod')
+    True
+
+If the parent is `None` or an empty string, `get_child()` resolves the
+same node as `get_cache(child)`:
+
+    >>> pluca.cache.get_child(None, 'mod') is pluca.cache.get_cache('mod')
+    True
+
 
 A call from another random module would return the root (file) cache:
 

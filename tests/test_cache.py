@@ -53,6 +53,15 @@ class TestCache(unittest.TestCase):
         cache = plc.get_child('pkg', 'mod')
         self.assertIsInstance(cache, pluca.null.Cache)
 
+    def test_get_child_empty_parent(self) -> None:
+        plc.add(None, 'file')
+        plc.add('mod', 'null')
+
+        cache = plc.get_cache('mod')
+
+        self.assertIs(plc.get_child(None, 'mod'), cache)
+        self.assertIs(plc.get_child('', 'mod'), cache)
+
     def test_add_no_root(self) -> None:
         plc.add('mod', 'null')
         cache = plc.get_cache('mod')

@@ -131,7 +131,9 @@ def get_child(parent: str | None, child: str) -> Cache:
         The cache resolved for ``parent.child``.
 
     """
-    return get_cache(f'{parent or ""}.{child}')
+    if parent:
+        return get_cache(f'{parent}.{child}')
+    return get_cache(child)
 
 
 def remove(node: str | None = None, shutdown: bool = True) -> None:

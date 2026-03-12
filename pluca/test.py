@@ -1,10 +1,11 @@
 import abc
-import uuid
 import time
 import unittest
 from typing import TYPE_CHECKING
+import uuid
 
 import pluca
+from pluca.adapter import CacheAdapter
 
 if TYPE_CHECKING:
     _BaseClass = unittest.TestCase
@@ -14,11 +15,14 @@ else:
 
 # Yes, I know this is big, but in this case bigger is better, therefore
 # pylint: disable-next=too-many-public-methods
-class CacheTester(abc.ABC, _BaseClass):
+class AdapterTester(abc.ABC, _BaseClass):
 
     @abc.abstractmethod
-    def get_cache(self) -> pluca.Cache:
+    def get_adapter(self) -> CacheAdapter:
         pass
+
+    def get_cache(self) -> pluca.Cache:
+        return pluca.Cache(self.get_adapter())
 
     def test_create(self) -> None:
         self.get_cache()

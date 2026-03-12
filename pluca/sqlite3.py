@@ -1,10 +1,9 @@
+import pickle
+import re
 import sqlite3
 import time
-import re
 from collections.abc import Iterable, Mapping
 from typing import Any
-
-import pluca
 
 _VALID_IDENTIFIER = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
@@ -15,28 +14,8 @@ def _validate_identifier(name: str, kind: str) -> str:
     return name
 
 
-class SQLite3Cache(pluca.Cache):
-    """SQLite3 cache for pluca.
-
-    This cache store entries in a SQLite3 database.
-
-    Example:
-
-            cache = pluca.sqlite3.cache('/tmp/cache.db',
-                                        pragma={'journal_mode': 'WAL'},
-                                        isolation_level=None)
-
-    Args:
-
-        filename: The SQL database file name (pass ":memory:" for a
-            in-memory database).
-        pragma: A {key: value} mapping of PRAGMA directives to be set
-            on the connection. Directive names must be valid SQLite
-            identifiers (`[A-Za-z_][A-Za-z0-9_]*`).
-        **kwargs: All other arguments are passed unchanged to
-            `sqlite3.connect()`.
-
-    """
+class SQLite3Adapter:
+    """SQLite3 cache adapter for pluca."""
 
     def __init__(self,
                  filename: str,
@@ -55,36 +34,25 @@ class SQLite3Cache(pluca.Cache):
         _validate_identifier(self._exp_col, 'column')
 
         if pragma:
-            for (name, value) in pragma.items():
+            for name, value in pragma.items():
                 _validate_identifier(name, 'PRAGMA')
                 self._conn.execute(f'PRAGMA {name} = {value!r}')
 
-        self.__check_table()
-
-        self.filename = filename
-
-    def __repr__(self) -> str:
-        return (f'{self.__class__.__name__}('
-                f'filename={self.filename!r}, '
-                f'table={self._table!r}, '
-                f'k_column={self._k_col!r}, '
-                f'v_column={self._v_col!r}, '
-                f'expires_column={self._exp_col!r})')
-
-    def __check_table(self) -> None:
         self._conn.execute(f'CREATE TABLE IF NOT EXISTS {self._table} ('
                            f'{self._k_col} VARCHAR PRIMARY KEY, '
                            f'{self._v_col} BLOB NOT NULL, '
                            f'{self._exp_col} FLOAT) '
                            'WITHOUT ROWID')
 
+        self.filename = filename
+
     def _commit(self) -> None:
         if self._conn.in_transaction:
             self._conn.commit()
 
-    def _put(self, mkey: Any, value: Any,
-             max_age: float | None = None) -> None:
-        svalue = self._dumps(value)
+    def put_mapped(self, mkey: Any, value: Any,
+                   max_age: float | None = None) -> None:
+        svalue = pickle.dumps(value)
         expires = None if max_age is None else time.time() + max_age
 
         cur = self._conn.cursor()
@@ -96,86 +64,18 @@ class SQLite3Cache(pluca.Cache):
                     f'{self._exp_col} = {self._ph}',
                     (mkey, svalue, expires, svalue, expires))
         cur.close()
-
-    def _get(self, mkey: Any) -> Any:
-        cur = self._conn.cursor()
-        cur.execute(f'SELECT {self._v_col}, {self._exp_col} '
-                    f'FROM {self._table} '
-                    f'WHERE {self._k_col} = {self._ph} '
-                    f'AND ({self._exp_col} IS NULL '
-                    f'OR {self._exp_col} > {self._ph})',
-                    (mkey, time.time()))
-        row = cur.fetchone()
-        cur.close()
-        if not row:
-            raise KeyError(mkey)
-        return self._loads(row[0])
-
-    def _remove(self, mkey: Any) -> None:
-        cur = self._conn.cursor()
-        cur.execute(f'DELETE FROM {self._table} '
-                    f'WHERE {self._k_col} = {self._ph}',
-                    (mkey,))
-        rowcount = cur.rowcount
-        cur.close()
-        if rowcount == 0:
-            raise KeyError(mkey)
-
-    def _flush(self) -> None:
-        cur = self._conn.cursor()
-        cur.execute(f'DELETE FROM {self._table}')
-        cur.close()
-
-    def _has(self, key: Any) -> bool:
-        cur = self._conn.cursor()
-        cur.execute('SELECT EXISTS('
-                    f'SELECT * FROM {self._table} '
-                    f'WHERE {self._k_col} = {self._ph} '
-                    f'AND ({self._exp_col} IS NULL '
-                    f'OR {self._exp_col} > {self._ph}))',
-                    (key, time.time()))
-        has = bool(cur.fetchone()[0])
-        cur.close()
-        return has
-
-    def put(self, key: Any, value: Any,
-            max_age: float | None = None) -> None:
-        """Store a value and commit when needed.
-
-        Args:
-            key: Entry key.
-            value: Value to cache.
-            max_age: Maximum age in seconds.
-
-        """
-        super().put(key, value, max_age)
         self._commit()
 
-    def put_many(self,
-                 data: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
-                 max_age: float | None = None) -> None:
-        """Store multiple values atomically and commit once.
-
-        Args:
-            data: Mapping or iterable of ``(key, value)`` pairs.
-            max_age: Maximum age in seconds applied to all entries.
-
-        Raises:
-            ValueError: If ``max_age`` is negative.
-
-        """
-        if max_age and max_age < 0:
-            raise ValueError('Cache max_age must be greater or equal to zero, '
-                             f'got {max_age}')
-
+    def put_many_mapped(self,
+                        data: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
+                        max_age: float | None = None) -> None:
         if isinstance(data, Mapping):
             data = data.items()
 
         expires = None if max_age is None else time.time() + max_age
         values = []
-        for (key, value) in data:
-            mkey = self._map_key(key)
-            svalue = self._dumps(value)
+        for mkey, value in data:
+            svalue = pickle.dumps(value)
             values.append((mkey, svalue, expires, svalue, expires))
 
         if not values:
@@ -204,24 +104,69 @@ class SQLite3Cache(pluca.Cache):
 
         self._commit()
 
-    def remove(self, key: Any) -> None:
-        """Remove an entry and commit when needed.
+    def get_mapped(self, mkey: Any) -> Any:
+        cur = self._conn.cursor()
+        cur.execute(f'SELECT {self._v_col}, {self._exp_col} '
+                    f'FROM {self._table} '
+                    f'WHERE {self._k_col} = {self._ph} '
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph})',
+                    (mkey, time.time()))
+        row = cur.fetchone()
+        cur.close()
+        if not row:
+            raise KeyError(mkey)
+        return pickle.loads(row[0])
 
-        Args:
-            key: Entry key.
+    def get_many_mapped(self, keys: Iterable[Any],
+                        default: Any = ...) -> list[tuple[Any, Any]]:
+        all_mkeys = list(dict.fromkeys(keys))
+        if not all_mkeys:
+            return []
 
-        """
-        super().remove(key)
+        in_list = ', '.join([self._ph] * len(all_mkeys))
+        args: list[Any] = list(all_mkeys)
+        args.append(time.time())
+
+        values_by_key: dict[Any, Any] = {}
+
+        cur = self._conn.cursor()
+        cur.execute(f'SELECT {self._k_col}, {self._v_col} '
+                    f'FROM {self._table} '
+                    f'WHERE {self._k_col} IN ({in_list}) '
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph})',
+                    tuple(args))
+
+        for row in cur.fetchall():
+            values_by_key[row[0]] = pickle.loads(row[1])
+
+        cur.close()
+
+        if default is not Ellipsis:
+            for key in all_mkeys:
+                if key not in values_by_key:
+                    values_by_key[key] = default
+
+        result = []
+        for key in all_mkeys:
+            if key in values_by_key:
+                result.append((key, values_by_key[key]))
+        return result
+
+    def remove_mapped(self, mkey: Any) -> None:
+        cur = self._conn.cursor()
+        cur.execute(f'DELETE FROM {self._table} '
+                    f'WHERE {self._k_col} = {self._ph}',
+                    (mkey,))
+        rowcount = cur.rowcount
+        cur.close()
         self._commit()
+        if rowcount == 0:
+            raise KeyError(mkey)
 
-    def remove_many(self, keys: Iterable[Any]) -> None:
-        """Remove multiple entries and commit when needed.
-
-        Args:
-            keys: Iterable of entry keys.
-
-        """
-        items = tuple(self._map_key(k) for k in keys)
+    def remove_many_mapped(self, keys: Iterable[Any]) -> None:
+        items = tuple(keys)
         if not items:
             return
 
@@ -233,51 +178,23 @@ class SQLite3Cache(pluca.Cache):
         cur.close()
         self._commit()
 
-    def get_many(self, keys: Iterable[Any],
-                 default: Any = ...) -> list[tuple[Any, Any]]:
-        """Fetch multiple keys in one query.
-
-        Args:
-            keys: Iterable of cache keys.
-            default: Value to use for missing keys. If omitted, missing keys
-                are excluded.
-
-        Returns:
-            A list of ``(key, value)`` tuples.
-
-        """
-        all_keys = {self._map_key(k): k for k in keys}
-        if not all_keys:
-            return []
-
-        in_list = ', '.join([self._ph] * len(all_keys))
-        args: list[Any] = list(all_keys.keys())
-        args.append(time.time())
-
-        res = []
-
-        cur = self._conn.cursor()
-        cur.execute(f'SELECT {self._k_col}, {self._v_col} '
-                    f'FROM {self._table} '
-                    f'WHERE {self._k_col} IN ({in_list}) '
-                    f'AND ({self._exp_col} IS NULL '
-                    f'OR {self._exp_col} > {self._ph})',
-                    tuple(args))
-
-        for row in cur.fetchall():
-            key = all_keys.pop(row[0])
-            res.append((key, self._loads(row[1])))
-        cur.close()
-
-        if default is not Ellipsis:
-            res.extend((k, default) for k in all_keys.values())
-
-        return res
-
     def flush(self) -> None:
-        """Remove all entries and commit when needed."""
-        super().flush()
+        cur = self._conn.cursor()
+        cur.execute(f'DELETE FROM {self._table}')
+        cur.close()
         self._commit()
+
+    def has_mapped(self, mkey: Any) -> bool:
+        cur = self._conn.cursor()
+        cur.execute('SELECT EXISTS('
+                    f'SELECT * FROM {self._table} '
+                    f'WHERE {self._k_col} = {self._ph} '
+                    f'AND ({self._exp_col} IS NULL '
+                    f'OR {self._exp_col} > {self._ph}))',
+                    (mkey, time.time()))
+        has = bool(cur.fetchone()[0])
+        cur.close()
+        return has
 
     def gc(self) -> None:
         """Delete expired rows, commit, and optimize the database."""
@@ -294,4 +211,4 @@ class SQLite3Cache(pluca.Cache):
         self._conn.close()
 
 
-Cache = SQLite3Cache
+Adapter = SQLite3Adapter

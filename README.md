@@ -40,7 +40,7 @@ The `pluca.file` backend stores cache entries on the file system while
 keeping the same cache API used by the other backends.
 
     >>> import pluca.file
-    >>> file_cache = pluca.file.Cache(name='docs-file-cache')
+    >>> file_cache = pluca.Cache(pluca.file.Adapter(name='docs-file-cache'))
     >>> file_cache.put('answer', 42)
     >>> file_cache.get('answer')
     42
@@ -58,8 +58,8 @@ while preserving the same pluggable cache interface.
     >>> import pluca.sqlite3
     >>> import tempfile
     >>> sqlite_tempdir = tempfile.TemporaryDirectory()
-    >>> sqlite_cache = pluca.sqlite3.Cache(
-    ...     filename=f'{sqlite_tempdir.name}/cache.db')
+    >>> sqlite_cache = pluca.Cache(pluca.sqlite3.Adapter(
+    ...     filename=f'{sqlite_tempdir.name}/cache.db'))
     >>> sqlite_cache.put('user-count', 123)
     >>> sqlite_cache.get('user-count')
     123
@@ -74,7 +74,7 @@ The `pluca.memory` backend keeps cached values in process memory for
 fast repeated lookups during the life of the cache object.
 
     >>> import pluca.memory
-    >>> memory_cache = pluca.memory.Cache(max_entries=1000)
+    >>> memory_cache = pluca.Cache(pluca.memory.Adapter(max_entries=1000))
     >>> memory_cache.put('greeting', 'hello')
     >>> memory_cache.get('greeting')
     'hello'
@@ -108,7 +108,7 @@ First import the cache module:
 
 Now create the cache object:
 
-    >>> cache = pluca.file.Cache()
+    >>> cache = pluca.Cache(pluca.file.Adapter())
 
 Store _3.1415_ in the cache using _pi_ as key:
 
@@ -236,7 +236,7 @@ Now let's switch to the “null” backend (the “null” backend does not
 store the data anywhere — see `help(pluca.null.Cache)` for more info):
 
     >>> import pluca.null
-    >>> null_cache = pluca.null.Cache()
+    >>> null_cache = pluca.Cache(pluca.null.Adapter())
     >>>
     >>> cached_factorial(null_cache, 10)
     CACHE MISS - calculating 10!
@@ -490,7 +490,7 @@ Calling `get_cache()` returns the root cache:
 
     >>> cache = pluca.cache.get_cache()
     >>> cache  # doctest: +ELLIPSIS
-    FileCache(name=..., cache_dir=...)
+    <pluca.Cache object at ...>
 
 To resolve a direct child cache from a parent node, use `get_child()`:
 
@@ -509,7 +509,7 @@ A call from another random module would return the root (file) cache:
     >>> # In another.py
     >>> cache = pluca.cache.get_cache(__name__)
     >>> cache  # doctest: +ELLIPSIS
-    FileCache(name=..., cache_dir=...)
+    <pluca.Cache object at ...>
 
 **NOTE**: a root cache is always required. If you don’t set up the root
 cache, then `pluca.cache.basic_config()` will be called to set up one
@@ -570,7 +570,7 @@ and cannot be `.` or `..`.
 
     >>> pluca.cache.add('c4', 'pluca.file', name='c4', cache_dir='/tmp')
     >>> pluca.cache.get_cache('c4')  # doctest: +ELLIPSIS
-    FileCache(name='c4', cache_dir=PosixPath('/tmp'), locking=...)
+    <pluca.Cache object at ...>
 
 You can also explicitly choose locking behavior per file cache:
 
@@ -595,8 +595,8 @@ You can also configure the API using a dict-like object using
     ...         },
     ...     },
     ... })
-    >>> pluca.cache.get_cache('mod')
-    NullCache()
+    >>> pluca.cache.get_cache('mod')  # doctest: +ELLIPSIS
+    <pluca.Cache object at ...>
 
 To restrict dynamic class loading, pass `allowed_class_modules`. This
 accepts module prefixes, so `('pluca',)` allows classes under
@@ -636,8 +636,8 @@ provided. Here is an example:
     >>>
     >>> pluca.cache.file_config(temp.name)
     >>>
-    >>> pluca.cache.get_cache('mod')
-    NullCache()
+    >>> pluca.cache.get_cache('mod')  # doctest: +ELLIPSIS
+    <pluca.Cache object at ...>
 
 The same restriction is available for INI-based configuration:
 
@@ -657,7 +657,7 @@ Notice that removing a node does not remove its children:
     >>> pluca.cache.add('a.b.c', 'pluca.file')
     >>> pluca.cache.remove('a.b')
     >>> pluca.cache.get_cache('a.b.c')  # doctest: +ELLIPSIS
-    FileCache(name=...)
+    <pluca.Cache object at ...>
 
 To remove all configured cache nodes and effectively reset the Global
 Cache API, call `pluca.cache.remove_all()`:
@@ -692,17 +692,17 @@ and `remove()` attempts deletion on every tier before raising
     >>> import pluca.comp
     >>> import pluca.memory
     >>> import pluca.file
-    >>> comp_cache = pluca.comp.Cache()
-    >>> comp_cache.add_cache(pluca.memory.Cache(max_entries=100))
-    >>> comp_cache.add_cache(pluca.file.Cache(name='comp-example'))
+    >>> comp_cache = pluca.Cache(pluca.comp.Adapter())
+    >>> comp_cache.add_cache(pluca.Cache(pluca.memory.Adapter(max_entries=100)))
+    >>> comp_cache.add_cache(pluca.Cache(pluca.file.Adapter(name='comp-example')))
 
 You can also configure child caches from dict-like configuration
 objects:
 
-    >>> cfg_cache = pluca.comp.Cache([
+    >>> cfg_cache = pluca.Cache(pluca.comp.Adapter([
     ...     {'factory': 'pluca.memory', 'max_entries': 10},
     ...     {'factory': 'pluca.null'},
-    ... ])
+    ... ]))
 
 As with the Global Cache API, composite cache configuration supports
 `allowed_class_modules` when loading factories dynamically.

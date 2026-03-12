@@ -65,6 +65,10 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 ### Changed
 
 - **BC BREAK:** The project now requires Python 3.11+.
+- **BC BREAK:** Backend implementation now uses adapters instead of
+  `pluca.Cache` subclass inheritance. Built-in backend modules now expose
+  `Adapter` adapter classes, and module-only factories resolve to
+  `:Adapter`.
 - SQLite3 now creates new cache tables with `WITHOUT ROWID`.
 - **BC BREAK:** Internal cache ABC method names were standardized (`key` ->
   `mkey`, `flush` -> `_flush`), which may require updates in custom backend

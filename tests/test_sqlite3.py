@@ -3,8 +3,9 @@ import sqlite3
 import tempfile
 from typing import Any
 
+import pluca
 import pluca.sqlite3
-from pluca.test import CacheTester
+from pluca.test import AdapterTester
 
 
 class _Undumpable:
@@ -13,10 +14,10 @@ class _Undumpable:
         raise TypeError('cannot pickle _Undumpable')
 
 
-class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
+class TestSqlite3BackEnd(AdapterTester, unittest.TestCase):
 
-    def get_cache(self) -> pluca.sqlite3.Cache:
-        return pluca.sqlite3.Cache(':memory:')
+    def get_adapter(self) -> pluca.sqlite3.Adapter:
+        return pluca.sqlite3.Adapter(':memory:')
 
     def test_put_max_age_zero(self) -> None:
         cache = self.get_cache()
@@ -26,11 +27,13 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
 
     def test_pragma(self) -> None:
         with self.assertRaises(sqlite3.OperationalError) as ex:
-            pluca.sqlite3.Cache(':memory:', pragma={'query_only': True})
+            pluca.Cache(pluca.sqlite3.Adapter(':memory:',
+                                              pragma={'query_only': True}))
         self.assertIn('readonly database', str(ex.exception))
 
-        # Check proper repr() handling.
-        pluca.sqlite3.Cache(':memory:', pragma={'encoding': 'utf-8'})
+        # Check pragma string handling.
+        pluca.Cache(pluca.sqlite3.Adapter(':memory:',
+                                          pragma={'encoding': 'utf-8'}))
 
     def test_pragma_invalid_identifier(self) -> None:
         expected_error = 'Invalid SQLite PRAGMA ' \
@@ -47,35 +50,36 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
             with self.subTest(name=name):
                 with self.assertRaisesRegex(ValueError,
                                             expected_error):
-                    pluca.sqlite3.Cache(
+                    pluca.Cache(pluca.sqlite3.Adapter(
                         ':memory:',
                         pragma={name: True},
-                    )
+                    ))
 
     def test_pragma_valid_identifier(self) -> None:
-        cache = pluca.sqlite3.Cache(':memory:',
-                                    pragma={'journal_mode': 'WAL'})
+        cache = pluca.Cache(pluca.sqlite3.Adapter(':memory:',
+                                                  pragma={
+                                                      'journal_mode': 'WAL'}))
         cache.put('foo', 'bar')
         self.assertEqual(cache.get('foo'), 'bar')
 
     def test_put_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             cache.put('foo', 'bar')
             cache.shutdown()
             del cache
 
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             self.assertEqual(cache.get('foo'), 'bar')
 
     def test_put_many_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             cache.put_many({'foo': 'bar', 'zee': 'lee'})
             cache.shutdown()
             del cache
 
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             self.assertEqual(cache.get('foo'), 'bar')
             self.assertEqual(cache.get('zee'), 'lee')
 
@@ -89,7 +93,8 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
             cache.get('ok')
 
     def test_put_many_is_atomic_with_autocommit(self) -> None:
-        cache = pluca.sqlite3.Cache(':memory:', isolation_level=None)
+        cache = pluca.Cache(pluca.sqlite3.Adapter(':memory:',
+                                                  isolation_level=None))
 
         with self.assertRaises(TypeError):
             cache.put_many([('ok', 'value'), ('boom', _Undumpable())])
@@ -99,7 +104,7 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
 
     def test_table_is_created_without_rowid(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             row = cache._conn.execute(
                 "SELECT sql FROM sqlite_master "
                 "WHERE type = 'table' AND name = 'cache'"
@@ -110,26 +115,26 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
 
     def test_remove_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             cache.put('foo', 'bar')
             cache.remove('foo')
             cache.shutdown()
             del cache
 
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             with self.assertRaises(KeyError):
                 cache.get('foo')
 
     def test_remove_many_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             cache.put('foo', 'bar')
             cache.put('xii', 'lee')
             cache.remove_many(['foo', 'xii'])
             cache.shutdown()
             del cache
 
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             with self.assertRaises(KeyError):
                 cache.get('foo')
             with self.assertRaises(KeyError):
@@ -156,12 +161,12 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
 
     def test_flush_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             cache.put('foo', 'bar')
             cache.flush()
             cache.shutdown()
             del cache
 
-            cache = pluca.sqlite3.Cache(ctx.name)
+            cache = pluca.Cache(pluca.sqlite3.Adapter(ctx.name))
             with self.assertRaises(KeyError):
                 cache.get('foo')

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import pluca
+from pluca.adapter import CacheAdapter
 
 
 def _is_module_allowed(module: str, allowed_modules: tuple[str, ...]) -> bool:
@@ -13,7 +14,7 @@ def _is_module_allowed(module: str, allowed_modules: tuple[str, ...]) -> bool:
 
 
 def _parse_factory_path(path: str,
-                        default_name: str = 'Cache') -> tuple[str, str]:
+                        default_name: str = 'Adapter') -> tuple[str, str]:
     if path.count(':') > 1:
         raise ValueError(f'Invalid cache factory path: {path!r}')
 
@@ -62,7 +63,7 @@ def create_cache(factory: str,
     Args:
         factory: Factory path as ``"module:factory"``. If ``:factory`` is
             omitted,
-            ``:Cache`` is assumed.
+            ``:Adapter`` is assumed.
         allowed_modules: Optional tuple of allowed module prefixes for
             ``factory``. When provided, ``factory`` must resolve to one of
             those modules or their submodules.
@@ -75,7 +76,7 @@ def create_cache(factory: str,
         AttributeError: If the resolved attribute is not callable.
         ValueError: If ``allowed_modules`` is empty or ``factory`` is outside
             the configured module allowlist.
-        TypeError: If the factory result is not a ``pluca.Cache``.
+        TypeError: If the factory result is not a cache adapter.
 
     """
     (module, name) = _parse_factory_path(factory)
@@ -90,7 +91,9 @@ def create_cache(factory: str,
     factory_obj = getattr(mod, name)
     if not callable(factory_obj):
         raise AttributeError(f'{factory} is not callable')
-    cache = factory_obj(**kwargs)
-    if not isinstance(cache, pluca.Cache):
-        raise TypeError(f'{factory} is not a cache factory')
-    return cache
+    adapter: object = factory_obj(**kwargs)
+
+    if not isinstance(adapter, CacheAdapter):
+        raise TypeError(f'{factory} is not a cache adapter factory')
+
+    return pluca.Cache(adapter)

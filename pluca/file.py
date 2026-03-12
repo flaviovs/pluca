@@ -1,13 +1,20 @@
 import warnings
+import importlib
 import os
+import pickle
 import socket
 import time
 from contextlib import contextmanager
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from pathlib import Path
+from types import ModuleType
 from typing import Any, BinaryIO, cast
 
-import pluca
+fcntl: ModuleType | None
+try:
+    import fcntl
+except ModuleNotFoundError:
+    fcntl = None
 
 _FILE_MAX_AGE = 1_000_000_000
 
@@ -77,7 +84,7 @@ def _resolve_cache_root(cache_dir: Path, name: str) -> Path:
     return cache_root
 
 
-class FileCache(pluca.Cache):
+class FileAdapter:
     """File cache for pluca.
 
     Store cache entries on the file system.
@@ -118,7 +125,7 @@ class FileCache(pluca.Cache):
 
         if cache_dir is None:
             try:
-                import appdirs  # pylint: disable=import-outside-toplevel
+                appdirs = importlib.import_module('appdirs')
                 cache_dir = Path(appdirs.user_cache_dir())
             except ModuleNotFoundError:
                 cache_dir = Path.home() / '.cache'
@@ -142,21 +149,10 @@ class FileCache(pluca.Cache):
         self.name = name
         self.cache_dir = cache_dir
 
-    def __repr__(self) -> str:
-        return (f'{self.__class__.__name__}'
-                f'(name={self.name!r}, '
-                f'cache_dir={self.cache_dir!r}, '
-                f'locking={self.locking!r}, '
-                f'mkdir_stale_age={self.mkdir_stale_age!r}, '
-                f'mkdir_wait_timeout={self.mkdir_wait_timeout!r}, '
-                f'mkdir_poll_interval={self.mkdir_poll_interval!r})')
-
     def _dump(self, obj: Any, fd: BinaryIO) -> None:
-        import pickle  # pylint: disable=import-outside-toplevel
         pickle.dump(obj, fd)
 
     def _load(self, fd: BinaryIO) -> Any:
-        import pickle  # pylint: disable=import-outside-toplevel
         return pickle.load(fd)
 
     def _get_filename(self, mkey: str) -> Path:
@@ -184,7 +180,8 @@ class FileCache(pluca.Cache):
 
         try:
             if self.locking == 'flock':
-                import fcntl  # pylint: disable=import-outside-toplevel
+                if fcntl is None:
+                    raise RuntimeError('fcntl is unavailable')
                 lock_mode = fcntl.LOCK_SH if shared else fcntl.LOCK_EX
                 fcntl.flock(fd.fileno(), lock_mode)
                 try:
@@ -194,7 +191,6 @@ class FileCache(pluca.Cache):
                 return
 
             if self.locking == 'msvcrt':
-                import importlib  # pylint: disable=import-outside-toplevel
                 msvcrt = importlib.import_module('msvcrt')
                 fd.seek(0)
                 getattr(msvcrt, 'locking')(
@@ -316,18 +312,15 @@ class FileCache(pluca.Cache):
         temp = filename.with_suffix('.tmp')
         while True:
             try:
-                fd = open(temp, 'xb')  # pylint: disable=consider-using-with
+                with open(temp, 'xb') as fd:
+                    self._dump(value, fd)
             except FileExistsError:
                 time.sleep(0.1)
+            except Exception:
+                temp.unlink()
+                raise
             else:
                 break
-        try:
-            self._dump(value, fd)
-        except:  # noqa: E722
-            temp.unlink()
-            raise
-        finally:
-            fd.close()
         temp.replace(filename)
 
     def _set_max_age(self, filename: Path,
@@ -359,8 +352,8 @@ class FileCache(pluca.Cache):
 
         return filename
 
-    def _put(self, mkey: Any, value: Any,
-             max_age: float | None = None) -> None:
+    def put_mapped(self, mkey: Any, value: Any,
+                   max_age: float | None = None) -> None:
         filename = self._get_filename(mkey)
 
         if self.locking == 'mkdir':
@@ -391,7 +384,7 @@ class FileCache(pluca.Cache):
             fd.flush()
             self._set_max_age(filename, max_age)
 
-    def _get(self, mkey: Any) -> Any:
+    def get_mapped(self, mkey: Any) -> Any:
         filename = self._get_filename(mkey)
 
         if self.locking == 'mkdir':
@@ -422,7 +415,7 @@ class FileCache(pluca.Cache):
                 filename.unlink(missing_ok=True)
         raise KeyError(mkey)
 
-    def _remove(self, mkey: Any) -> None:
+    def remove_mapped(self, mkey: Any) -> None:
         filename = self._get_filename(mkey)
 
         if self.locking == 'mkdir':
@@ -445,7 +438,7 @@ class FileCache(pluca.Cache):
                 raise KeyError(mkey)
             filename.unlink(missing_ok=True)
 
-    def _flush(self) -> None:
+    def flush(self) -> None:
         if not self._cache_root.exists():
             return
         for path in self._cache_root.iterdir():
@@ -476,8 +469,8 @@ class FileCache(pluca.Cache):
                 warnings.warn(
                     f'Unexpected entry in cache directory: {path}')
 
-    def _has(self, key: Any) -> bool:
-        filename = self._get_filename(key)
+    def has_mapped(self, mkey: Any) -> bool:
+        filename = self._get_filename(mkey)
 
         if self.locking == 'mkdir':
             with self._lock_entry_mkdir(filename):
@@ -496,6 +489,18 @@ class FileCache(pluca.Cache):
             if wfd is not None and self._is_expired(filename):
                 filename.unlink(missing_ok=True)
         return False
+
+    def put_many_mapped(self,
+                        data: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
+                        max_age: float | None = None) -> None:
+        raise NotImplementedError
+
+    def get_many_mapped(self, keys: Iterable[Any],
+                        default: Any = ...) -> list[tuple[Any, Any]]:
+        raise NotImplementedError
+
+    def remove_many_mapped(self, keys: Iterable[Any]) -> None:
+        raise NotImplementedError
 
     def _gc_dir(self, path: Path) -> None:
         if not path.exists():
@@ -525,5 +530,9 @@ class FileCache(pluca.Cache):
             return
         self._gc_dir(self._cache_root)
 
+    def shutdown(self) -> None:
+        """Shutdown the cache backend."""
+        return None
 
-Cache = FileCache
+
+Adapter = FileAdapter

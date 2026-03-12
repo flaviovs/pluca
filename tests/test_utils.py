@@ -49,13 +49,13 @@ class TestUtils(unittest.TestCase):
 
     def test_parse_factory_path_explicit(self) -> None:
         self.assertEqual(
-            plu._parse_factory_path('pluca.null:Cache'),
-            ('pluca.null', 'Cache'))
+            plu._parse_factory_path('pluca.null:Adapter'),
+            ('pluca.null', 'Adapter'))
 
     def test_parse_factory_path_default_name(self) -> None:
         self.assertEqual(
             plu._parse_factory_path('pluca.null'),
-            ('pluca.null', 'Cache'))
+            ('pluca.null', 'Adapter'))
         self.assertEqual(
             plu._parse_factory_path('pluca.null', default_name='Factory'),
             ('pluca.null', 'Factory'))
@@ -63,10 +63,10 @@ class TestUtils(unittest.TestCase):
     def test_parse_factory_path_module_with_dots(self) -> None:
         self.assertEqual(
             plu._parse_factory_path('pluca_memcache.Cache'),
-            ('pluca_memcache.Cache', 'Cache'))
+            ('pluca_memcache.Cache', 'Adapter'))
 
     def test_parse_factory_path_invalid(self) -> None:
-        invalid = (':Cache', 'pluca.null:', 'a:b:c')
+        invalid = (':Adapter', 'pluca.null:', 'a:b:c')
         for path in invalid:
             with self.subTest(path=path):
                 with self.assertRaises(ValueError):
@@ -75,8 +75,8 @@ class TestUtils(unittest.TestCase):
     def test_create_cache_module_defaults_to_cache(self) -> None:
         cache = plu.create_cache('pluca.null')
         self.assertIsInstance(cache, pluca.Cache)
-        self.assertIsInstance(cache, pluca.null.Cache)
+        self.assertIsInstance(cache.adapter, pluca.null.NullAdapter)
 
     def test_create_cache_explicit_factory(self) -> None:
-        cache = plu.create_cache('pluca.null:Cache')
-        self.assertIsInstance(cache, pluca.null.Cache)
+        cache = plu.create_cache('pluca.null:Adapter')
+        self.assertIsInstance(cache.adapter, pluca.null.NullAdapter)

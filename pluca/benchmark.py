@@ -9,6 +9,7 @@ import sys
 import time
 import tempfile
 from typing import Any, NamedTuple
+from collections.abc import Callable
 
 import pluca
 import pluca.file
@@ -66,7 +67,7 @@ Cache                   secs     op/s secs     op/s secs     op/s secs     op/s
 
 # pylint: disable-next=too-many-locals
 def benchmark(name: str, entries: int,
-              cls: type[pluca.Cache], **kwargs: Any) -> None:
+              adapter_factory: Callable[..., Any], **kwargs: Any) -> None:
     prng = _Random()
 
     data = _get_data(entries)
@@ -79,7 +80,7 @@ def benchmark(name: str, entries: int,
     gc.disable()
 
     gc.collect()
-    cache = cls(**kwargs)
+    cache = pluca.Cache(adapter_factory(**kwargs))
     put_start = time.time()
     for key, value in data:
         cache.put(key, value)
@@ -100,7 +101,7 @@ def benchmark(name: str, entries: int,
     gc.collect()
 
     exp = [(0 if prng.random() > 0.5 else None) for _ in range(entries)]
-    cache = cls(**kwargs)
+    cache = pluca.Cache(adapter_factory(**kwargs))
     get_mixed_start = time.time()
     for i, (key, value) in enumerate(data):
         cache.put(key, value, exp[i])
@@ -138,47 +139,50 @@ def _main() -> None:
 
     print_header(args.entries)
 
-    benchmark('File lock=None', args.entries, pluca.file.Cache, locking=None)
+    benchmark('File lock=None', args.entries, pluca.file.Adapter,
+              locking=None)
 
     if os.name != 'nt':
         benchmark('File lock=flock', args.entries,
-                  pluca.file.Cache, locking='flock')
+                  pluca.file.Adapter, locking='flock')
 
     if os.name == 'nt':
         benchmark('File lock=msvcrt', args.entries,
-                  pluca.file.Cache, locking='msvcrt')
+                  pluca.file.Adapter, locking='msvcrt')
 
     benchmark('File lock=mkdir', args.entries,
-              pluca.file.Cache, locking='mkdir')
+              pluca.file.Adapter, locking='mkdir')
 
-    benchmark('Memory unbounded', args.entries, pluca.memory.Cache)
+    benchmark('Memory unbounded', args.entries, pluca.memory.Adapter)
     benchmark(f'Memory {args.entries // 2:,}',
-              args.entries, pluca.memory.Cache, max_entries=args.entries // 2)
+              args.entries, pluca.memory.Adapter,
+              max_entries=args.entries // 2)
     benchmark(f'Memory {args.entries // 2:,} prune=20%',
-              args.entries, pluca.memory.Cache, max_entries=args.entries // 2,
+              args.entries, pluca.memory.Adapter,
+              max_entries=args.entries // 2,
               prune=int(args.entries * 0.2))
-    benchmark('Null', args.entries, pluca.null.Cache)
+    benchmark('Null', args.entries, pluca.null.Adapter)
 
     with tempfile.NamedTemporaryFile() as ctx:
         benchmark('SQLite file',
-                  args.entries, pluca.sqlite3.Cache, filename=ctx.name)
+                  args.entries, pluca.sqlite3.Adapter, filename=ctx.name)
 
     with tempfile.NamedTemporaryFile() as ctx:
         benchmark('SQLite file autocommit',
-                  args.entries, pluca.sqlite3.Cache,
+                  args.entries, pluca.sqlite3.Adapter,
                   filename=ctx.name, isolation_level=None)
 
     with tempfile.NamedTemporaryFile() as ctx:
         benchmark('SQLite file WAL',
-                  args.entries, pluca.sqlite3.Cache,
+                  args.entries, pluca.sqlite3.Adapter,
                   filename=ctx.name, pragma={'journal_mode': 'WAL'})
 
     benchmark('SQLite :memory:',
-              args.entries, pluca.sqlite3.Cache, filename=':memory:')
+              args.entries, pluca.sqlite3.Adapter, filename=':memory:')
 
     with tempfile.TemporaryDirectory() as tempdir:
         dbd = dbm.dumb.open(f'{tempdir}/db', 'n')
-        benchmark('DBM dumb', args.entries, pluca.dbm.Cache, db=dbd)
+        benchmark('DBM dumb', args.entries, pluca.dbm.Adapter, db=dbd)
         dbd.close()
 
 

@@ -47,7 +47,7 @@ def add(node: str | None, factory: str, reuse: bool = True,
     Args:
         node: Dot-delimited cache node path. ``None`` targets the root node.
         factory: Cache factory path in ``"module:factory"`` format. If
-            ``:factory`` is omitted, ``:Cache`` is assumed.
+            ``:factory`` is omitted, ``:Adapter`` is assumed.
         reuse: Reuse an existing cache instance with identical factory and
             arguments when available.
         allowed_class_modules: Optional tuple of allowed module prefixes used
@@ -205,7 +205,7 @@ def basic_config(factory: str = _DEFAULT_BACKEND,
 
     Args:
         factory: Cache factory path in ``"module:factory"`` format. If
-            ``:factory`` is omitted, ``:Cache`` is assumed.
+            ``:factory`` is omitted, ``:Adapter`` is assumed.
         allowed_class_modules: Optional tuple of allowed module prefixes used
             to validate ``factory`` before importing.
         **kwargs: Named arguments passed to the cache factory.

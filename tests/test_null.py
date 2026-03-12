@@ -1,16 +1,15 @@
 import unittest
 
-import pluca
 import pluca.null
-from pluca.test import CacheTester
+from pluca.test import AdapterTester
 
 
-class TestNull(CacheTester, unittest.TestCase):
+class TestNull(AdapterTester, unittest.TestCase):
 
-    def get_cache(self) -> pluca.Cache:
-        return pluca.null.Cache()
+    def get_adapter(self) -> pluca.null.Adapter:
+        return pluca.null.Adapter()
 
-    # Override CacheTester tests for the null cache use case.
+    # Override AdapterTester tests for the null cache use case.
 
     def test_put_get(self) -> None:
         cache = self.get_cache()

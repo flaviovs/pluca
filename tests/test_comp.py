@@ -7,28 +7,62 @@ import pluca
 import pluca.comp
 import pluca.memory
 import pluca.null
-from pluca.test import CacheTester
+from pluca.test import AdapterTester
 
 
-class _CompositeProbeCache(pluca.null.Cache):
-    pass
+class _CompositeProbeAdapter:
+
+    def put_mapped(self, mkey: Any, value: Any,
+                   max_age: float | None = None) -> None:
+        _ = (mkey, value, max_age)
+
+    def get_mapped(self, mkey: Any) -> Any:
+        raise KeyError(mkey)
+
+    def remove_mapped(self, mkey: Any) -> None:
+        raise KeyError(mkey)
+
+    def flush(self) -> None:
+        pass
+
+    def has_mapped(self, mkey: Any) -> bool:
+        _ = mkey
+        return False
+
+    def put_many_mapped(self,
+                        data: Any,
+                        max_age: float | None = None) -> None:
+        raise NotImplementedError
+
+    def get_many_mapped(self, keys: Any,
+                        default: Any = ...) -> list[tuple[Any, Any]]:
+        raise NotImplementedError
+
+    def remove_many_mapped(self, keys: Any) -> None:
+        raise NotImplementedError
+
+    def gc(self) -> None:
+        pass
+
+    def shutdown(self) -> None:
+        pass
 
 
-class TestComposite(CacheTester, unittest.TestCase):
+class TestComposite(AdapterTester, unittest.TestCase):
 
     def setUp(self) -> None:
         # pylint: disable-next=consider-using-with
         self._tempdir = tempfile.TemporaryDirectory()
 
-        self._cache1 = pluca.memory.Cache()
-        self._cache2 = pluca.memory.Cache()
-        self._cache3 = pluca.memory.Cache()
+        self._cache1 = pluca.Cache(pluca.memory.Adapter())
+        self._cache2 = pluca.Cache(pluca.memory.Adapter())
+        self._cache3 = pluca.Cache(pluca.memory.Adapter())
 
     def tearDown(self) -> None:
         self._tempdir.cleanup()
 
-    def get_cache(self) -> pluca.comp.Cache:
-        cache = pluca.comp.Cache()
+    def get_adapter(self) -> pluca.comp.Adapter:
+        cache = pluca.comp.Adapter()
 
         cache.add_cache(self._cache1)
         cache.add_cache(self._cache2)
@@ -43,7 +77,7 @@ class TestComposite(CacheTester, unittest.TestCase):
                          [self._cache1, self._cache2, self._cache3])
 
     def test_add_cache_config(self) -> None:
-        cache = pluca.comp.Cache()
+        cache = pluca.Cache(pluca.comp.Adapter())
 
         cache.add_cache_config({
             'factory': 'pluca.memory',
@@ -54,50 +88,47 @@ class TestComposite(CacheTester, unittest.TestCase):
             'factory': 'pluca.null',
         })
 
-        cache1: pluca.memory.Cache
-        cache2: pluca.null.Cache
-        cache1, cache2 = cache.caches  # type: ignore [assignment]
+        cache1, cache2 = cache.caches
 
-        self.assertIsInstance(cache1, pluca.memory.Cache)
+        self.assertIsInstance(cache1.adapter, pluca.memory.MemoryAdapter)
         self.assertEqual(cache1.max_entries, 10)
 
-        self.assertIsInstance(cache2, pluca.null.Cache)
+        self.assertIsInstance(cache2.adapter, pluca.null.NullAdapter)
 
     def test_add_cache_config_allowed_class_modules(self) -> None:
-        cache = pluca.comp.Cache()
+        cache = pluca.Cache(pluca.comp.Adapter())
 
         with self.assertRaises(ValueError):
             cache.add_cache_config({
-                'factory': 'tests.test_comp:_CompositeProbeCache',
+                'factory': 'tests.test_comp:_CompositeProbeAdapter',
             }, allowed_class_modules=('pluca',))
 
         cache.add_cache_config({
-            'factory': 'tests.test_comp:_CompositeProbeCache',
+            'factory': 'tests.test_comp:_CompositeProbeAdapter',
         }, allowed_class_modules=('tests',))
 
-        self.assertIsInstance(cache.caches[0], _CompositeProbeCache)
+        self.assertIsInstance(cache.caches[0], pluca.Cache)
 
     def test_constructor_allowed_class_modules(self) -> None:
-        cache = pluca.comp.Cache(
-            [{'factory': 'tests.test_comp:_CompositeProbeCache'}],
+        cache = pluca.Cache(pluca.comp.Adapter(
+            [{'factory': 'tests.test_comp:_CompositeProbeAdapter'}],
             allowed_class_modules=('tests',))
+        )
 
-        self.assertIsInstance(cache.caches[0], _CompositeProbeCache)
+        self.assertIsInstance(cache.caches[0], pluca.Cache)
 
     def test_constructor(self) -> None:
-        cache = pluca.comp.Cache([
+        cache = pluca.Cache(pluca.comp.Adapter([
             {'factory': 'pluca.memory', 'max_entries': 10},
             {'factory': 'pluca.null'},
-        ])
+        ]))
 
-        cache1: pluca.memory.Cache
-        cache2: pluca.null.Cache
-        cache1, cache2 = cache.caches  # type: ignore [assignment]
+        cache1, cache2 = cache.caches
 
-        self.assertIsInstance(cache1, pluca.memory.Cache)
+        self.assertIsInstance(cache1.adapter, pluca.memory.MemoryAdapter)
         self.assertEqual(cache1.max_entries, 10)
 
-        self.assertIsInstance(cache2, pluca.null.Cache)
+        self.assertIsInstance(cache2.adapter, pluca.null.NullAdapter)
 
     def test_comp_put(self) -> None:
         cache = self.get_cache()

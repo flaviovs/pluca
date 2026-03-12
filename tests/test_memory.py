@@ -2,16 +2,16 @@ import unittest
 
 import pluca
 import pluca.memory
-from pluca.test import CacheTester
+from pluca.test import AdapterTester
 
 
-class TestMemory(CacheTester, unittest.TestCase):
+class TestMemory(AdapterTester, unittest.TestCase):
 
-    def get_cache(self) -> pluca.Cache:
-        return pluca.memory.Cache()
+    def get_adapter(self) -> pluca.memory.Adapter:
+        return pluca.memory.Adapter()
 
     def test_max_entries(self) -> None:
-        cache = pluca.memory.Cache(max_entries=3)
+        cache = pluca.Cache(pluca.memory.Adapter(max_entries=3))
 
         cache.put('key1', 1, 10)  # Earliest expiration, will be removed.
         cache.put('key2', 2)
@@ -24,7 +24,7 @@ class TestMemory(CacheTester, unittest.TestCase):
         self.assertFalse(cache.has('key1'))
 
     def test_gc(self) -> None:
-        cache = pluca.memory.Cache(max_entries=2)
+        cache = pluca.Cache(pluca.memory.Adapter(max_entries=2))
 
         cache.put('key1', 1)
         cache.put('key2', 2)
@@ -38,10 +38,10 @@ class TestMemory(CacheTester, unittest.TestCase):
 
     def test_constructor_validation(self) -> None:
         with self.assertRaises(ValueError):
-            pluca.memory.Cache(max_entries=2, prune=3)
+            pluca.memory.Adapter(max_entries=2, prune=3)
 
     def test_copy_data(self) -> None:
-        cache = pluca.memory.Cache()
+        cache = pluca.Cache(pluca.memory.Adapter())
 
         alist = [1, 2, 3]
 
@@ -52,7 +52,7 @@ class TestMemory(CacheTester, unittest.TestCase):
         self.assertEqual(cache.get('alist'), [1, 2, 3])
 
     def test_put_max_age_zero(self) -> None:
-        cache = pluca.memory.Cache()
+        cache = pluca.Cache(pluca.memory.Adapter())
         cache.put('foo', 'bar', max_age=0)
         with self.assertRaises(KeyError):
             cache.get('foo')

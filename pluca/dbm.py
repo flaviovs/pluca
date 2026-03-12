@@ -1,9 +1,9 @@
-import time
+from collections.abc import Iterable, Mapping
 import dbm
+import pickle
+import time
 from pathlib import Path
 from typing import Any, NamedTuple
-
-import pluca
 
 
 class _Entry(NamedTuple):
@@ -15,20 +15,8 @@ class _Entry(NamedTuple):
         return self.expires is None or self.expires > time.time()
 
 
-class DbmCache(pluca.Cache):
-    """DBM cache for pluca.
-
-    This cache store entries in DBM files. It uses Python's [DBM
-    database interface](https://docs.python.org/3/library/dbm.html).
-
-    You call instantiate DBM caches with either an existing DMB file
-    handle, or a file name. In the latter case, the file will be
-    created if it does not exist.
-
-    Args:
-        db: The DBM object, or a database file name.
-
-    """
+class DbmAdapter:
+    """DBM cache adapter for pluca."""
 
     def __init__(self, db: Any):
         if isinstance(db, str):
@@ -38,41 +26,49 @@ class DbmCache(pluca.Cache):
         else:
             self.dbm = db
 
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(dbm={self.dbm!r})'
-
-    def _put(self, mkey: Any, value: Any,
-             max_age: float | None = None) -> None:
+    def put_mapped(self, mkey: Any, value: Any,
+                   max_age: float | None = None) -> None:
         expires = None if max_age is None else time.time() + max_age
-        self.dbm[mkey] = self._dumps(_Entry(value,
-                                            expires))
+        self.dbm[mkey] = pickle.dumps(_Entry(value, expires))
 
-    def _get(self, mkey: Any) -> Any:
-        entry = self._loads(self.dbm[mkey])
+    def get_mapped(self, mkey: Any) -> Any:
+        entry = pickle.loads(self.dbm[mkey])
         if not entry.is_fresh:
             del self.dbm[mkey]
             raise KeyError(mkey)
         return entry.value
 
-    def _remove(self, mkey: Any) -> None:
+    def remove_mapped(self, mkey: Any) -> None:
         del self.dbm[mkey]
 
-    def _flush(self) -> None:
+    def flush(self) -> None:
         for key in self.dbm.keys():
             del self.dbm[key]
 
-    def _has(self, key: Any) -> bool:
-        return key in self.dbm
+    def has_mapped(self, mkey: Any) -> bool:
+        return mkey in self.dbm
+
+    def put_many_mapped(self,
+                        data: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
+                        max_age: float | None = None) -> None:
+        raise NotImplementedError
+
+    def get_many_mapped(self, keys: Iterable[Any],
+                        default: Any = ...) -> list[tuple[Any, Any]]:
+        raise NotImplementedError
+
+    def remove_many_mapped(self, keys: Iterable[Any]) -> None:
+        raise NotImplementedError
 
     def gc(self) -> None:
         """Delete expired entries and compact the DBM store when possible."""
         for key in self.dbm.keys():
-            entry = self._loads(self.dbm[key])
+            entry = pickle.loads(self.dbm[key])
             if not entry.is_fresh:
                 del self.dbm[key]
 
         try:
-            self.dbm.reorganize()  # type: ignore [attr-defined]
+            self.dbm.reorganize()  # type: ignore[attr-defined]
         except AttributeError:
             pass
 
@@ -81,4 +77,4 @@ class DbmCache(pluca.Cache):
         self.dbm.close()
 
 
-Cache = DbmCache
+Adapter = DbmAdapter

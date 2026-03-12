@@ -24,6 +24,8 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 
 ### Fixed
 
+- README examples and API reference now match the current cache, global
+  configuration, and composite-cache behavior.
 - `FileCache` cache names are hardened against path traversal inputs.
 - `FileCache.flush()` and `FileCache.gc()` are now safe no-ops on fresh
   caches (or after cache-directory removal) instead of raising

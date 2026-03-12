@@ -3,16 +3,39 @@ name = "pluca"
 authors = [{name = "Flavio Veloso Soares", email = "flaviovs@magnux.com"}]
 license = {file = "LICENSE.txt"}
 readme = "README.md"
+description = "Python caching library with file cache, SQLite cache, memory cache, and pluggable backends."
+keywords = [
+  "python caching",
+  "python cache",
+  "caching library",
+  "file cache",
+  "sqlite cache",
+  "memory cache",
+  "disk cache",
+  "persistent cache",
+]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Database",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Caching",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 requires-python = ">=3.11"
 
-dynamic = ["version", "description"]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/flaviovs/pluca"
+Repository = "https://github.com/flaviovs/pluca"
+Issues = "https://github.com/flaviovs/pluca/issues"
+Changelog = "https://github.com/flaviovs/pluca/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

@@ -56,7 +56,10 @@ The `pluca.sqlite3` backend stores cache entries in a SQLite database
 while preserving the same pluggable cache interface.
 
     >>> import pluca.sqlite3
-    >>> sqlite_cache = pluca.sqlite3.Cache(name='docs_sqlite_cache')
+    >>> import tempfile
+    >>> sqlite_tempdir = tempfile.TemporaryDirectory()
+    >>> sqlite_cache = pluca.sqlite3.Cache(
+    ...     filename=f'{sqlite_tempdir.name}/cache.db')
     >>> sqlite_cache.put('user-count', 123)
     >>> sqlite_cache.get('user-count')
     123
@@ -461,6 +464,10 @@ You can also customize the cache object:
 
     >>> pluca.cache.basic_config('file', cache_dir='/tmp')
 
+To disable file locking for a file backend instance:
+
+    >>> pluca.cache.basic_config('file', cache_dir='/tmp', locking=None)
+
 **Note**: when you call `basic_config()` all existing caches are
 removed before the new one is set up.
 
@@ -560,8 +567,13 @@ example `mycache`): it cannot be absolute, cannot contain `/` or `\\`,
 and cannot be `.` or `..`.
 
     >>> pluca.cache.add('c4', 'file', name='c4', cache_dir='/tmp')
-    >>> pluca.cache.get_cache('c4')
-    FileCache(name='c4', cache_dir=PosixPath('/tmp'))
+    >>> pluca.cache.get_cache('c4')  # doctest: +ELLIPSIS
+    FileCache(name='c4', cache_dir=PosixPath('/tmp'), locking=...)
+
+You can also explicitly choose locking behavior per file cache:
+
+    >>> pluca.cache.add('c4.nolock', 'file', name='c4_nolock',
+    ...                 cache_dir='/tmp', locking=None)
 
 You can also configure the API using a dict-like object using
 `pluca.cache.dict_config()`:
@@ -731,6 +743,30 @@ Caveats
   installed, otherwise `~/.cache`. The cache `name` must be a single
   safe path segment: it cannot be absolute, cannot contain `/` or `\\`,
   and cannot be `.` or `..`.
+
+  File locking can be controlled with the `locking` argument:
+
+  - `locking='auto'` (default) selects the most efficient stdlib lock
+    mechanism for the current OS.
+  - `locking=None` disables file locking.
+  - `locking='mkdir'` uses lock directories and is suitable when cache
+    files are on NFS.
+  - `locking='flock'` (POSIX) and `locking='msvcrt'` (Windows) force a
+    specific stdlib lock mechanism.
+
+  For `locking='mkdir'`, these options control lock waiting and stale
+  lock cleanup:
+
+  - `mkdir_stale_age` (default `300.0` seconds)
+  - `mkdir_wait_timeout` (default `30.0` seconds)
+  - `mkdir_poll_interval` (default `0.05` seconds)
+
+  Lock ownership metadata is written to `<entry>.lock/owner` as three
+  newline-separated values: PID, hostname, and creation timestamp.
+
+  Locks are applied to each entry file. On POSIX (`flock`), reads use a
+  shared lock and writes/removals use an exclusive lock. On Windows
+  (`msvcrt`), reads and writes both use exclusive locking.
 
 * `pluca.utils.create_cachedir_tag()` can create a `CACHEDIR.TAG` file
   for cache directories managed by your application:

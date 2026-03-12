@@ -138,7 +138,19 @@ def _main() -> None:
 
     print_header(args.entries)
 
-    benchmark('File', args.entries, pluca.file.Cache)
+    benchmark('File lock=None', args.entries, pluca.file.Cache, locking=None)
+
+    if os.name != 'nt':
+        benchmark('File lock=flock', args.entries,
+                  pluca.file.Cache, locking='flock')
+
+    if os.name == 'nt':
+        benchmark('File lock=msvcrt', args.entries,
+                  pluca.file.Cache, locking='msvcrt')
+
+    benchmark('File lock=mkdir', args.entries,
+              pluca.file.Cache, locking='mkdir')
+
     benchmark('Memory unbounded', args.entries, pluca.memory.Cache)
     benchmark(f'Memory {args.entries // 2:,}',
               args.entries, pluca.memory.Cache, max_entries=args.entries // 2)

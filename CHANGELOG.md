@@ -21,6 +21,11 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 - A `task spellcheck` command powered by `codespell`.
 - Optional class-loading allowlists for dynamic cache configuration APIs
   (`dict_config()`, `file_config()`, and composite cache config loading).
+- File backend locking is now configurable via `locking=` (`'auto'`,
+  mechanism name, or `None`). The default auto-selects the most efficient
+  stdlib mechanism for the current platform. Locking is applied per cache
+  entry file, and `locking='mkdir'` is available for NFS-friendly locking
+  with stale-lock handling.
 
 ### Fixed
 

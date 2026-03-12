@@ -57,6 +57,130 @@ class TestFile(CacheTester, unittest.TestCase):
         cache.put('key', 'value')
         self.assertEqual(cache.get('key'), 'value')
 
+    def test_locking_none_works(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(
+            name='nolock',
+            cache_dir=self._dir,
+            locking=None,
+        )
+        cache.put('key', 'value')
+        self.assertEqual(cache.get('key'), 'value')
+        self.assertIsNone(cache.locking)
+
+    def test_locking_mkdir_works(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(
+            name='mkdirlock',
+            cache_dir=self._dir,
+            locking='mkdir',
+        )
+        cache.put('key', 'value')
+        self.assertEqual(cache.get('key'), 'value')
+        self.assertEqual(cache.locking, 'mkdir')
+
+    def test_locking_mkdir_defaults(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(
+            name='mkdirdefaults',
+            cache_dir=self._dir,
+            locking='mkdir',
+        )
+        self.assertEqual(cache.mkdir_stale_age, 300.0)
+        self.assertEqual(cache.mkdir_wait_timeout, 30.0)
+        self.assertEqual(cache.mkdir_poll_interval, 0.05)
+
+    def test_locking_mkdir_option_validation(self) -> None:
+        assert self._dir is not None
+
+        with self.assertRaises(ValueError):
+            pluca.file.Cache(name='bad1', cache_dir=self._dir,
+                             locking='mkdir', mkdir_stale_age=0)
+        with self.assertRaises(ValueError):
+            pluca.file.Cache(name='bad2', cache_dir=self._dir,
+                             locking='mkdir', mkdir_wait_timeout=0)
+        with self.assertRaises(ValueError):
+            pluca.file.Cache(name='bad3', cache_dir=self._dir,
+                             locking='mkdir', mkdir_poll_interval=0)
+
+    def test_locking_mkdir_owner_file_format(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(name='mkdirowner', cache_dir=self._dir,
+                                 locking='mkdir')
+        filename = cache._get_filename(cache._map_key('k'))
+        with cache._lock_entry_mkdir(filename, create=True):
+            owner_file = Path(f'{filename}.lock') / 'owner'
+            self.assertTrue(owner_file.exists())
+            data = owner_file.read_text(encoding='utf-8').splitlines()
+            self.assertEqual(len(data), 3)
+            self.assertEqual(int(data[0]), os.getpid())
+            self.assertTrue(data[1])
+            self.assertGreater(float(data[2]), 0.0)
+
+    def test_locking_mkdir_stale_reclaim(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(name='mkdirstale', cache_dir=self._dir,
+                                 locking='mkdir', mkdir_stale_age=0.01,
+                                 mkdir_wait_timeout=1,
+                                 mkdir_poll_interval=0.01)
+        filename = cache._get_filename(cache._map_key('k'))
+        filename.parent.mkdir(parents=True)
+        lock_dir = Path(f'{filename}.lock')
+        lock_dir.mkdir()
+        owner_file = lock_dir / 'owner'
+        owner_file.write_text('999999\nother-host\n0\n', encoding='utf-8')
+
+        cache.put('k', 'v')
+        self.assertEqual(cache.get('k'), 'v')
+        self.assertFalse(lock_dir.exists())
+
+    def test_locking_mkdir_wait_timeout(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(name='mkdirtimeout', cache_dir=self._dir,
+                                 locking='mkdir', mkdir_stale_age=300,
+                                 mkdir_wait_timeout=0.05,
+                                 mkdir_poll_interval=0.01)
+        filename = cache._get_filename(cache._map_key('k'))
+        filename.parent.mkdir(parents=True)
+        lock_dir = Path(f'{filename}.lock')
+        lock_dir.mkdir()
+        owner_file = lock_dir / 'owner'
+        owner_file.write_text(f'{os.getpid()}\nlocal\n{time.time()}\n',
+                              encoding='utf-8')
+
+        with self.assertRaises(TimeoutError):
+            cache.put('k', 'v')
+
+    def test_locking_auto_works(self) -> None:
+        assert self._dir is not None
+        cache = pluca.file.Cache(
+            name='autolock',
+            cache_dir=self._dir,
+            locking='auto',
+        )
+        cache.put('key', 'value')
+        self.assertEqual(cache.get('key'), 'value')
+
+        if os.name == 'nt':
+            self.assertEqual(cache.locking, 'msvcrt')
+        else:
+            self.assertEqual(cache.locking, 'flock')
+
+    def test_invalid_locking_raises_valueerror(self) -> None:
+        assert self._dir is not None
+
+        with self.assertRaises(ValueError):
+            pluca.file.Cache(name='invalid', cache_dir=self._dir,
+                             locking='invalid')
+
+    def test_unsupported_locking_raises_valueerror(self) -> None:
+        assert self._dir is not None
+
+        locking = 'flock' if os.name == 'nt' else 'msvcrt'
+        with self.assertRaises(ValueError):
+            pluca.file.Cache(name='unsupported', cache_dir=self._dir,
+                             locking=locking)
+
     def test_name_with_double_dot_inside_segment_works(self) -> None:
         assert self._dir is not None
         cache = pluca.file.Cache(name='part1..part2', cache_dir=self._dir)

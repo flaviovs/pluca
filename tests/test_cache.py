@@ -101,6 +101,36 @@ class TestCache(unittest.TestCase):
         cache = plc.get_cache()
         self.assertIsInstance(cache, pluca.file.Cache)
 
+    def test_add_file_locking_none(self) -> None:
+        plc.add(None, 'file', locking=None)
+        cache = plc.get_cache()
+        self.assertIsInstance(cache, pluca.file.Cache)
+        file_cache = cast(pluca.file.Cache, cache)
+        self.assertIsNone(file_cache.locking)
+
+    def test_add_file_invalid_locking(self) -> None:
+        with self.assertRaises(ValueError):
+            plc.add(None, 'file', locking='invalid')
+
+    def test_add_file_locking_mkdir(self) -> None:
+        plc.add(None, 'file', locking='mkdir')
+        cache = plc.get_cache()
+        self.assertIsInstance(cache, pluca.file.Cache)
+        file_cache = cast(pluca.file.Cache, cache)
+        self.assertEqual(file_cache.locking, 'mkdir')
+
+    def test_add_file_locking_mkdir_options(self) -> None:
+        plc.add(None, 'file', locking='mkdir',
+                mkdir_stale_age=10,
+                mkdir_wait_timeout=2,
+                mkdir_poll_interval=0.01)
+        cache = plc.get_cache()
+        self.assertIsInstance(cache, pluca.file.Cache)
+        file_cache = cast(pluca.file.Cache, cache)
+        self.assertEqual(file_cache.mkdir_stale_age, 10)
+        self.assertEqual(file_cache.mkdir_wait_timeout, 2)
+        self.assertEqual(file_cache.mkdir_poll_interval, 0.01)
+
     def test_basic_config_called_explicitly(self) -> None:
         cache = plc.get_cache()
         self.assertIsInstance(cache, pluca.file.Cache)
@@ -228,6 +258,46 @@ class TestCache(unittest.TestCase):
         mem_cache.put('b', 2)
         mem_cache.put('c', 3)
         self.assertTrue(mem_cache.has('c'))
+
+    def test_file_config_file_locking_none(self) -> None:
+        # pylint: disable-next=consider-using-with
+        temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
+        temp.write('''
+        [__root__]
+        class = file
+        locking = none
+        ''')
+        temp.flush()
+        temp.seek(0)
+
+        plc.file_config(temp.name)
+        cache = plc.get_cache()
+        self.assertIsInstance(cache, pluca.file.Cache)
+        file_cache = cast(pluca.file.Cache, cache)
+        self.assertIsNone(file_cache.locking)
+
+    def test_file_config_file_locking_mkdir_options(self) -> None:
+        # pylint: disable-next=consider-using-with
+        temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
+        temp.write('''
+        [__root__]
+        class = file
+        locking = mkdir
+        mkdir_stale_age = 10
+        mkdir_wait_timeout = 2
+        mkdir_poll_interval = 0.01
+        ''')
+        temp.flush()
+        temp.seek(0)
+
+        plc.file_config(temp.name)
+        cache = plc.get_cache()
+        self.assertIsInstance(cache, pluca.file.Cache)
+        file_cache = cast(pluca.file.Cache, cache)
+        self.assertEqual(file_cache.locking, 'mkdir')
+        self.assertEqual(file_cache.mkdir_stale_age, 10)
+        self.assertEqual(file_cache.mkdir_wait_timeout, 2)
+        self.assertEqual(file_cache.mkdir_poll_interval, 0.01)
 
     def test_file_config_allowed_class_modules(self) -> None:
         # pylint: disable-next=consider-using-with

@@ -63,7 +63,7 @@ class SQLite3Cache(pluca.Cache):
 
     def _commit(self) -> None:
         if self._conn.in_transaction:
-            self._conn.execute('COMMIT')
+            self._conn.commit()
 
     def _put(self, mkey: Any, value: Any,
              max_age: float | None = None) -> None:
@@ -137,14 +137,54 @@ class SQLite3Cache(pluca.Cache):
     def put_many(self,
                  data: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
                  max_age: float | None = None) -> None:
-        """Store multiple values and commit when needed.
+        """Store multiple values atomically and commit once.
 
         Args:
             data: Mapping or iterable of ``(key, value)`` pairs.
             max_age: Maximum age in seconds applied to all entries.
 
+        Raises:
+            ValueError: If ``max_age`` is negative.
+
         """
-        super().put_many(data, max_age)
+        if max_age and max_age < 0:
+            raise ValueError('Cache max_age must be greater or equal to zero, '
+                             f'got {max_age}')
+
+        if isinstance(data, Mapping):
+            data = data.items()
+
+        expires = None if max_age is None else time.time() + max_age
+        values = []
+        for (key, value) in data:
+            mkey = self._map_key(key)
+            svalue = self._dumps(value)
+            values.append((mkey, svalue, expires, svalue, expires))
+
+        if not values:
+            return
+
+        started_transaction = False
+        if not self._conn.in_transaction:
+            self._conn.execute('BEGIN')
+            started_transaction = True
+
+        cur = self._conn.cursor()
+        try:
+            cur.executemany(f'INSERT INTO {self._table} '
+                            f'({self._k_col}, {self._v_col}, {self._exp_col}) '
+                            f'VALUES ({self._ph}, {self._ph}, {self._ph}) '
+                            f'ON CONFLICT({self._k_col}) DO UPDATE SET '
+                            f'{self._v_col} = {self._ph}, '
+                            f'{self._exp_col} = {self._ph}',
+                            values)
+        except sqlite3.Error:
+            if started_transaction and self._conn.in_transaction:
+                self._conn.rollback()
+            raise
+        finally:
+            cur.close()
+
         self._commit()
 
     def remove(self, key: Any) -> None:

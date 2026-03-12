@@ -241,6 +241,10 @@ useful for caching with non-hashable keys:
     >>> cache.get(['a', 'b', 'c'])
     123
 
+On the `sqlite3` backend, `put_many()` is atomic: all rows are written
+in a single transaction and committed once. If one row fails, no rows
+from that `put_many()` call are persisted.
+
 Use `get_many()` to get many results at once. This method returns a
 list of _(key, value)_ tuples:
 

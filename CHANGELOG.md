@@ -34,6 +34,11 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
   backends.
 - Global `file_config()` now coerces INI booleans and numeric values before
   passing backend kwargs, avoiding delayed type errors at runtime.
+- SQLite3 `put_many()` is now atomic and commits once per call, avoiding
+  partial writes when a batch entry fails.
+- SQLite3 batch reads/removals now explicitly support empty key iterables,
+  and regression tests cover empty list/tuple/generator inputs to prevent
+  `IN ()` SQL regressions.
 - Developer-quality fixes: restored missing mypy overrides, fixed test file
   encoding warnings, and cleaned spelling/docs issues.
 

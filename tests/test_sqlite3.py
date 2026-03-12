@@ -1,9 +1,16 @@
 import unittest
 import sqlite3
 import tempfile
+from typing import Any
 
 import pluca.sqlite3
 from pluca.test import CacheTester
+
+
+class _Undumpable:
+
+    def __reduce__(self) -> tuple[object, tuple[Any, ...]]:
+        raise TypeError('cannot pickle _Undumpable')
 
 
 class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
@@ -46,6 +53,24 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
             self.assertEqual(cache.get('foo'), 'bar')
             self.assertEqual(cache.get('zee'), 'lee')
 
+    def test_put_many_is_atomic(self) -> None:
+        cache = self.get_cache()
+
+        with self.assertRaises(TypeError):
+            cache.put_many([('ok', 'value'), ('boom', _Undumpable())])
+
+        with self.assertRaises(KeyError):
+            cache.get('ok')
+
+    def test_put_many_is_atomic_with_autocommit(self) -> None:
+        cache = pluca.sqlite3.Cache(':memory:', isolation_level=None)
+
+        with self.assertRaises(TypeError):
+            cache.put_many([('ok', 'value'), ('boom', _Undumpable())])
+
+        with self.assertRaises(KeyError):
+            cache.get('ok')
+
     def test_remove_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
             cache = pluca.sqlite3.Cache(ctx.name)
@@ -72,6 +97,25 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
                 cache.get('foo')
             with self.assertRaises(KeyError):
                 cache.get('xii')
+
+    def test_remove_many_empty_iterables(self) -> None:
+        cache = self.get_cache()
+
+        cache.put('foo', 'bar')
+
+        cache.remove_many([])
+        cache.remove_many(())
+        cache.remove_many(iter(()))
+
+        self.assertEqual(cache.get('foo'), 'bar')
+
+    def test_get_many_empty_iterables(self) -> None:
+        cache = self.get_cache()
+
+        self.assertEqual(cache.get_many([]), [])
+        self.assertEqual(cache.get_many(()), [])
+        self.assertEqual(cache.get_many(iter(())), [])
+        self.assertEqual(cache.get_many([], default='default'), [])
 
     def test_flush_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:

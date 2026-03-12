@@ -1,12 +1,12 @@
 import importlib
 from pathlib import Path
-from typing import Union, Optional, Any
+from typing import Any
 
 import pluca
 
 
-def create_cachedir_tag(cache_dir: Union[str, Path],
-                        name: Optional[str] = 'pluca cache',
+def create_cachedir_tag(cache_dir: str | Path,
+                        name: str | None = 'pluca cache',
                         force: bool = False) -> None:
     if isinstance(cache_dir, str):
         cache_dir = Path(cache_dir)

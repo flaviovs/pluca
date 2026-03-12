@@ -1,13 +1,13 @@
 import sys
 import time
-from typing import Dict, Optional, Any, NamedTuple
+from typing import Any, NamedTuple
 
 import pluca
 
 
 class _Entry(NamedTuple):
     data: Any
-    expire: Optional[float]
+    expire: float | None
     index_: int
 
     @property
@@ -39,8 +39,8 @@ class MemoryCache(pluca.Cache):
     """
 
     def __init__(self,
-                 max_entries: Optional[int] = None,
-                 prune: Optional[int] = None) -> None:
+                 max_entries: int | None = None,
+                 prune: int | None = None) -> None:
         if (max_entries is not None
                 and prune is not None
                 and (prune < 1 or prune > max_entries)):
@@ -48,7 +48,7 @@ class MemoryCache(pluca.Cache):
                              'and less than max_entries')
         self.prune = prune
         self.max_entries = max_entries
-        self._storage: Dict[Any, _Entry] = {}
+        self._storage: dict[Any, _Entry] = {}
         self._count: int = 0
 
     def __repr__(self) -> str:
@@ -56,7 +56,7 @@ class MemoryCache(pluca.Cache):
                 f'prune={self.prune})')
 
     def _put(self, mkey: Any, value: Any,
-             max_age: Optional[float] = None) -> None:
+             max_age: float | None = None) -> None:
         if mkey not in self._storage:
             self._count += 1
         self._storage[mkey] = _Entry(

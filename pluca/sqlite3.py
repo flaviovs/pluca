@@ -1,5 +1,6 @@
 import sqlite3
-from typing import Mapping, Any, Union, Optional, Iterable, Tuple
+from collections.abc import Iterable, Mapping
+from typing import Any
 
 from .sql import SqlCache
 
@@ -29,8 +30,7 @@ class SQLite3Cache(SqlCache):
     # pylint: disable-next=too-many-arguments
     def __init__(self,
                  filename: str,
-                 pragma: Optional[Mapping[str,
-                                          Union[str, float, bool]]] = None,
+                 pragma: Mapping[str, str | float | bool] | None = None,
                  **kwargs: Any) -> None:
         super().__init__(sqlite3.connect(filename, **kwargs))
 
@@ -61,13 +61,13 @@ class SQLite3Cache(SqlCache):
             self._conn.execute('COMMIT')
 
     def put(self, key: Any, value: Any,
-            max_age: Optional[float] = None) -> None:
+            max_age: float | None = None) -> None:
         super().put(key, value, max_age)
         self._commit()
 
     def put_many(self,
-                 data: Union[Mapping[Any, Any], Iterable[Tuple[Any, Any]]],
-                 max_age: Optional[float] = None) -> None:
+                 data: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
+                 max_age: float | None = None) -> None:
         super().put_many(data, max_age)
         self._commit()
 

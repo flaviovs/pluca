@@ -1,8 +1,8 @@
 """Pluggable Cache Architecture for Python."""
 import abc
 from functools import wraps, partial
-from typing import (Optional, Any, Iterable, Mapping, Callable,
-                    List, Tuple, Union)
+from collections.abc import Callable, Iterable, Mapping
+from typing import Any
 
 __version__ = '0.6.2'
 
@@ -20,7 +20,7 @@ class Cache(abc.ABC):
     """
 
     def put(self, key: Any, value: Any,
-            max_age: Optional[float] = None) -> None:
+            max_age: float | None = None) -> None:
         if max_age and max_age < 0:
             raise ValueError('Cache max_age must be greater or equal to zero, '
                              f'got {max_age}')
@@ -39,7 +39,7 @@ class Cache(abc.ABC):
                                   'support garbage collection')
 
     def get_put(self, key: Any, func: Callable[[], Any],
-                max_age: Optional[float] = None) -> Any:
+                max_age: float | None = None) -> Any:
         mkey = self._map_key(key)
         try:
             return self._get(mkey)
@@ -65,7 +65,7 @@ class Cache(abc.ABC):
 
     @abc.abstractmethod
     def _put(self, mkey: Any, value: Any,
-             max_age: Optional[float] = None) -> None:
+             max_age: float | None = None) -> None:
         pass
 
     @abc.abstractmethod
@@ -108,15 +108,15 @@ class Cache(abc.ABC):
         return self._has(self._map_key(key))
 
     def put_many(self,
-                 data: Union[Mapping[Any, Any], Iterable[Tuple[Any, Any]]],
-                 max_age: Optional[float] = None) -> None:
+                 data: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
+                 max_age: float | None = None) -> None:
         if isinstance(data, Mapping):
             data = data.items()
         for (key, value) in data:
             self.put(key, value, max_age)
 
     def get_many(self, keys: Iterable[Any],
-                 default: Any = ...) -> List[Tuple[Any, Any]]:
+                 default: Any = ...) -> list[tuple[Any, Any]]:
         data = []
         for key in keys:
             try:
@@ -137,16 +137,14 @@ class Cache(abc.ABC):
 
         """
 
-    def __call__(self, func: Optional[Callable[..., Any]] = None,
-                 max_age: Optional[int] = None) -> Callable[..., Any]:
+    def __call__(self, func: Callable[..., Any] | None = None,
+                 max_age: int | None = None) -> Callable[..., Any]:
 
         if func is None:
             return partial(self.__call__, max_age=max_age)
 
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:  # type: ignore[no-untyped-def]
-            assert func
-
             key = ('__pluca.decorator__', func.__qualname__,
                    args, sorted(kwargs.items()))
             try:

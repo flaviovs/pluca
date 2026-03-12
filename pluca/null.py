@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any
 
 import pluca
 
@@ -15,7 +15,7 @@ class NullCache(pluca.Cache):
         return f'{self.__class__.__name__}()'
 
     def _put(self, mkey: Any, value: Any,
-             max_age: Optional[float] = None) -> None:
+             max_age: float | None = None) -> None:
         pass
 
     def _raise_keyerror(self, mkey: Any) -> Any:
@@ -24,7 +24,8 @@ class NullCache(pluca.Cache):
     _get = _raise_keyerror
     _remove = _raise_keyerror
 
-    def _has(self, _key: Any) -> bool:
+    def _has(self, key: Any) -> bool:
+        _ = key
         return False
 
     def _pass(self) -> None:

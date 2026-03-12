@@ -6,6 +6,8 @@ applications. The package provides an unified interface to several
 cache implementations, which allows an application to switch cache
 back-ends on an as-needed basis with minimal changes.
 
+Supported Python versions: 3.11+.
+
 Features
 --------
 - Unified cache interface - your application can just instantiate a

@@ -1,19 +1,20 @@
 import logging
-from typing import Dict, Tuple, Optional, Mapping, Any
+from collections.abc import Mapping
+from typing import Any
 
 from pluca import Cache
 from .utils import create_cache
 
-_caches: Dict[Tuple[str, ...], Cache] = {}
+_caches: dict[tuple[str, ...], Cache] = {}
 
-_nodes: Dict[Tuple[str, str], Cache] = {}
+_nodes: dict[tuple[str, str], Cache] = {}
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_BACKEND = 'file'
 
 
-def add(node: Optional[str], cls: str, reuse: bool = True,
+def add(node: str | None, cls: str, reuse: bool = True,
         **kwargs: Any) -> None:
 
     if node is None:
@@ -28,7 +29,7 @@ def add(node: Optional[str], cls: str, reuse: bool = True,
 
     node_key = (cls, repr(tuple(kwargs.items())))
 
-    cache: Optional[Cache] = _nodes.get(node_key, None) if reuse else None
+    cache: Cache | None = _nodes.get(node_key, None) if reuse else None
 
     if not cache:
         cache = create_cache(cls, **kwargs)
@@ -44,7 +45,7 @@ def add(node: Optional[str], cls: str, reuse: bool = True,
                  f'for {node!r}' if node else 'as root cache')
 
 
-def get_cache(node: Optional[str] = None) -> Cache:
+def get_cache(node: str | None = None) -> Cache:
     if node is None:
         node = ''
 
@@ -64,11 +65,11 @@ def get_cache(node: Optional[str] = None) -> Cache:
     return _caches[('',)]
 
 
-def get_child(parent: Optional[str], child: str) -> Cache:
+def get_child(parent: str | None, child: str) -> Cache:
     return get_cache(f'{parent or ""}.{child}')
 
 
-def remove(node: Optional[str] = None, shutdown: bool = True) -> None:
+def remove(node: str | None = None, shutdown: bool = True) -> None:
     if node is None:
         node = ''
 
@@ -132,7 +133,7 @@ def dict_config(config: Mapping[str, Any]) -> None:
         add(node, cls=cls, **cfg)
 
 
-def file_config(filename: str, encoding: Optional[str] = None) -> None:
+def file_config(filename: str, encoding: str | None = None) -> None:
     import configparser  # pylint: disable=import-outside-toplevel
 
     config = configparser.ConfigParser()
@@ -149,6 +150,6 @@ def file_config(filename: str, encoding: Optional[str] = None) -> None:
     add('', cls=cls, reuse=False, **section)
 
     for name in filter(lambda x: x != '__root__', config.sections()):
-        cfg = config[name]
+        cfg: dict[str, Any] = dict(config[name])
         cls = cfg.pop('class', _DEFAULT_BACKEND)
         add(name, cls=cls, **cfg)

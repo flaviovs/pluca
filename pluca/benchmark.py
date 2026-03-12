@@ -8,7 +8,7 @@ import sys
 import time
 import tempfile
 import warnings
-from typing import Any, NamedTuple, List, Tuple, Type
+from typing import Any, NamedTuple
 
 import pluca
 import pluca.file
@@ -31,7 +31,7 @@ class _Random(random.Random):
     def random_string(self) -> str:
         return ''.join(self.choice(string.ascii_letters) for i in range(50))
 
-    def random_tuple(self) -> Tuple[Any, ...]:
+    def random_tuple(self) -> tuple[Any, ...]:
         data = [
             self.randint(-1_000_000, 1_000_000),
             self.random_string(),
@@ -44,7 +44,7 @@ class _Random(random.Random):
         return tuple(data)
 
 
-def _get_data(nr: int) -> List[Tuple[Tuple[Any, ...], Tuple[Any, ...]]]:
+def _get_data(nr: int) -> list[tuple[tuple[Any, ...], tuple[Any, ...]]]:
     data = []
     prng = _Random()
     for _ in range(nr):
@@ -66,7 +66,7 @@ Cache                   secs     op/s secs     op/s secs     op/s secs     op/s
 
 # pylint: disable-next=too-many-locals
 def benchmark(name: str, entries: int,
-              cls: Type[pluca.Cache], **kwargs: Any) -> None:
+              cls: type[pluca.Cache], **kwargs: Any) -> None:
     prng = _Random()
 
     data = _get_data(entries)

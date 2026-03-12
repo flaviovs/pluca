@@ -5,7 +5,6 @@ import shutil
 import uuid
 import time
 from pathlib import Path
-from typing import Optional
 
 import pluca
 import pluca.file
@@ -15,7 +14,7 @@ from pluca.test import CacheTester
 class TestFile(CacheTester, unittest.TestCase):
 
     def setUp(self) -> None:
-        self._dir: Optional[Path] = Path(
+        self._dir: Path | None = Path(
             tempfile.mkdtemp(prefix='pluca-file-test'))
 
     def tearDown(self) -> None:
@@ -73,7 +72,7 @@ class TestFile(CacheTester, unittest.TestCase):
         cache.flush()
         self.assertEqual(len(os.listdir(self._dir)), 1)
 
-    def _count_files(self, path: Optional[Path]) -> int:
+    def _count_files(self, path: Path | None) -> int:
         assert path is not None
 
         nr = 0

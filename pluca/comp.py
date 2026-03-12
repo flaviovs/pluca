@@ -1,4 +1,5 @@
-from typing import Iterable, Mapping, List, Any, Optional, Callable
+from collections.abc import Callable, Iterable, Mapping
+from typing import Any
 
 import pluca
 from pluca.utils import create_cache
@@ -63,8 +64,8 @@ class CompositeCache(pluca.Cache):
     """
 
     def __init__(self,
-                 config: Optional[Iterable[Mapping[str, Any]]] = None) -> None:
-        self._caches: List[pluca.Cache] = []
+                 config: Iterable[Mapping[str, Any]] | None = None) -> None:
+        self._caches: list[pluca.Cache] = []
 
         if config:
             for cfg in config:
@@ -114,11 +115,11 @@ class CompositeCache(pluca.Cache):
         self._caches.append(cache)
 
     @property
-    def caches(self) -> List[pluca.Cache]:
+    def caches(self) -> list[pluca.Cache]:
         return self._caches.copy()
 
     def _put(self, mkey: Any, value: Any,
-             max_age: Optional[float] = None) -> None:
+             max_age: float | None = None) -> None:
         for cache in self._caches:
             # pylint: disable-next=protected-access
             cache._put(mkey, value, max_age)
@@ -136,7 +137,7 @@ class CompositeCache(pluca.Cache):
             cache.gc()
 
     def get_put(self, key: Any, func: Callable[[], Any],
-                max_age: Optional[float] = None) -> Any:
+                max_age: float | None = None) -> Any:
         mkey = self._map_key(key)
         try:
             return self._get(mkey)

@@ -1,14 +1,14 @@
 import time
 import dbm
 from pathlib import Path
-from typing import Any, Optional, NamedTuple
+from typing import Any, NamedTuple
 
 import pluca
 
 
 class _Entry(NamedTuple):
     value: Any
-    expires: Optional[float]
+    expires: float | None
 
     @property
     def is_fresh(self) -> bool:
@@ -42,7 +42,7 @@ class DbmCache(pluca.Cache):
         return f'{self.__class__.__name__}(dbm={self.dbm!r})'
 
     def _put(self, mkey: Any, value: Any,
-             max_age: Optional[float] = None) -> None:
+             max_age: float | None = None) -> None:
         self.dbm[mkey] = self._dumps(_Entry(value,
                                             time.time() + max_age
                                             if max_age else None))

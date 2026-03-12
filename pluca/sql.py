@@ -1,5 +1,6 @@
 import time
-from typing import Optional, Any, Iterable, List, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 import pluca
 
@@ -71,7 +72,7 @@ class SqlCache(pluca.Cache):
                 f'expires_column={self._exp_col!r})')
 
     def _put(self, mkey: Any, value: Any,
-             max_age: Optional[float] = None) -> None:
+             max_age: float | None = None) -> None:
         cur = self._conn.cursor()
         cur.execute(f'DELETE FROM {self._table} '
                     f'WHERE {self._k_col} = {self._ph}',
@@ -86,7 +87,7 @@ class SqlCache(pluca.Cache):
         cur.close()
 
     def _put_on_conflict(self, key: Any, value: Any,
-                         max_age: Optional[float] = None) -> None:
+                         max_age: float | None = None) -> None:
 
         svalue = self._dumps(value)
         expires = time.time() + max_age if max_age else None
@@ -102,7 +103,7 @@ class SqlCache(pluca.Cache):
         cur.close()
 
     def _put_on_duplicate_key(self, key: Any, value: Any,
-                              max_age: Optional[float] = None) -> None:
+                              max_age: float | None = None) -> None:
         svalue = self._dumps(value)
         expires = time.time() + max_age if max_age else None
 
@@ -167,12 +168,12 @@ class SqlCache(pluca.Cache):
         return has
 
     def get_many(self, keys: Iterable[Any],
-                 default: Any = ...) -> List[Tuple[Any, Any]]:
+                 default: Any = ...) -> list[tuple[Any, Any]]:
 
         all_keys = {self._map_key(k): k for k in keys}
 
         in_list = ', '.join([self._ph] * len(all_keys))
-        args: List[Any] = list(all_keys.keys())
+        args: list[Any] = list(all_keys.keys())
         args.append(time.time())
 
         res = []

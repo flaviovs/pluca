@@ -3,7 +3,7 @@ import os
 import time
 import shutil
 from pathlib import Path
-from typing import Optional, Any, BinaryIO
+from typing import Any, BinaryIO
 
 import pluca
 
@@ -18,9 +18,11 @@ def _validate_name(name: str) -> None:
     if os.path.isabs(name):
         raise ValueError(f'Cache name must not be absolute: {name!r}')
     if '/' in name or '\\' in name:
-        raise ValueError(f'Cache name must not contain path separators: {name!r}')
+        raise ValueError(
+            f'Cache name must not contain path separators: {name!r}')
     if name in ('.', '..'):
-        raise ValueError(f'Cache name must not contain traversal segments: {name!r}')
+        raise ValueError(
+            f'Cache name must not contain traversal segments: {name!r}')
 
 
 def _resolve_cache_root(cache_dir: Path, name: str) -> Path:
@@ -57,7 +59,7 @@ class FileCache(pluca.Cache):
     """
 
     def __init__(self, name: str = 'pluca',
-                 cache_dir: Optional[Path] = None) -> None:
+                 cache_dir: Path | None = None) -> None:
 
         if cache_dir is None:
             try:
@@ -112,17 +114,17 @@ class FileCache(pluca.Cache):
         temp.replace(filename)
 
     def _set_max_age(self, filename: Path,
-                     max_age: Optional[float] = None) -> None:
+                     max_age: float | None = None) -> None:
         if max_age is None:
             max_age = _FILE_MAX_AGE
         now = time.time()
         os.utime(filename, times=(now, now + max_age))
 
-    def _get_fresh_key_filename(self, mkey: Any) -> Optional[Path]:
+    def _get_fresh_key_filename(self, mkey: Any) -> Path | None:
         filename = self._get_filename(mkey)
         return self._get_fresh_filename(filename)
 
-    def _get_fresh_filename(self, filename: Path) -> Optional[Path]:
+    def _get_fresh_filename(self, filename: Path) -> Path | None:
         try:
             mtime = filename.stat().st_mtime
         except FileNotFoundError:
@@ -135,7 +137,7 @@ class FileCache(pluca.Cache):
         return filename
 
     def _put(self, mkey: Any, value: Any,
-             max_age: Optional[float] = None) -> None:
+             max_age: float | None = None) -> None:
         filename = self._get_filename(mkey)
         try:
             self._write(filename, value)

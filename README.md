@@ -119,6 +119,9 @@ Flushing the cache remove all entries:
         ...
     KeyError: 'bye'
 
+Calling `flush()` on a fresh cache with no stored entries is safe and
+acts as a no-op.
+
 ## Abstracting cache back-ends
 
 Here’s how to abstract cache back-ends. First, let’s define a function
@@ -267,6 +270,8 @@ resources. This is done by the `gc()` method:
 
 Notice that **pluca never calls `gc()` automatically** — it is up to
 your application to call it eventually to do garbage collection.
+
+Calling `gc()` on a fresh cache is also safe and behaves as a no-op.
 
 
 Global Cache API

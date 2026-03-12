@@ -160,6 +160,8 @@ class FileCache(pluca.Cache):
             raise KeyError(mkey) from ex
 
     def _flush(self) -> None:
+        if not self._cache_root.exists():
+            return
         for path in self._cache_root.iterdir():
             if path.name.startswith(_DIR_PREFIX) and path.is_dir():
                 shutil.rmtree(path)
@@ -170,6 +172,8 @@ class FileCache(pluca.Cache):
         return self._get_fresh_key_filename(key) is not None
 
     def _gc_dir(self, path: Path) -> None:
+        if not path.exists():
+            return
         for entry in path.iterdir():
             if entry.is_dir():
                 self._gc_dir(path / entry)
@@ -178,6 +182,8 @@ class FileCache(pluca.Cache):
 
     def gc(self) -> None:
         """Delete expired cache files from the cache directory."""
+        if not self._cache_root.exists():
+            return
         self._gc_dir(self._cache_root)
 
 

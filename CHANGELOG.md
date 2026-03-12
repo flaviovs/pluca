@@ -23,6 +23,9 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 ### Fixed
 
 - `FileCache` cache names are hardened against path traversal inputs.
+- `FileCache.flush()` and `FileCache.gc()` are now safe no-ops on fresh
+  caches (or after cache-directory removal) instead of raising
+  `FileNotFoundError`.
 - Global `pluca.cache.gc()` now behaves correctly even when a backend does not
   implement GC.
 - Root cache removal is now idempotent (safe to call multiple times).

@@ -72,6 +72,11 @@ class TestFile(CacheTester, unittest.TestCase):
         cache.flush()
         self.assertEqual(len(os.listdir(self._dir)), 1)
 
+    def test_flush_on_fresh_cache_is_noop(self) -> None:
+        cache = self.get_cache()
+        cache.flush()
+        self.assertEqual(len(os.listdir(self._dir)), 0)
+
     def _count_files(self, path: Path | None) -> int:
         assert path is not None
 
@@ -92,3 +97,16 @@ class TestFile(CacheTester, unittest.TestCase):
         time.sleep(1)
         cache.gc()
         self.assertEqual(self._count_files(self._dir), 1)
+
+    def test_gc_on_fresh_cache_is_noop(self) -> None:
+        cache = self.get_cache()
+        cache.gc()
+        self.assertEqual(len(os.listdir(self._dir)), 0)
+
+    def test_gc_after_manual_cache_root_removal_is_noop(self) -> None:
+        assert self._dir is not None
+        cache = self.get_cache()
+        cache.put('foo', 'bar')
+        shutil.rmtree(self._dir / 'test')
+        cache.gc()
+        self.assertEqual(len(os.listdir(self._dir)), 0)

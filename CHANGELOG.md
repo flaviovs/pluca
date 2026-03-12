@@ -9,6 +9,8 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-03-12
+
 ### Added
 
 - A new `CompositeCache` backend for composing multiple cache strategies.

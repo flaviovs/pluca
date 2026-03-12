@@ -7,7 +7,7 @@ from typing import Any
 
 from .adapter import CacheAdapter
 
-__version__ = '0.6.2'
+__version__ = '0.7.0'
 
 
 class CacheError(Exception):

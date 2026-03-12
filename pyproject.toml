@@ -61,8 +61,9 @@ skip = '*~,./.git,./.venv,./.mypy_cache,*requirements.txt,./pluca.egg-info'
 
 [tool.mypy]
 python_version = "3.11"
+mypy_path = "src"
 
-files = ["pluca", "tests"]
+files = ["src/pluca", "tests"]
 show_error_codes = true
 strict = true
 
@@ -76,6 +77,7 @@ ignore_missing_imports = true
 ignore-paths = [".git", ".venv"]
 ignore-patterns = '^\.#'
 recursive = true
+init-hook = "import sys; sys.path.insert(0, 'src')"
 load-plugins = [
   "pylint.extensions.bad_builtin",
   "pylint.extensions.check_elif",

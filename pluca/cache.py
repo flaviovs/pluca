@@ -39,6 +39,33 @@ def _coerce_file_config_section(
             for (name, value) in section.items()}
 
 
+def _flatten_toml_sections(
+        sections: Mapping[str, Any],
+        prefix: str = '') -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+
+    for name, section in sections.items():
+        if not isinstance(section, Mapping):
+            continue
+
+        node = f'{prefix}.{name}' if prefix else name
+        child_sections: dict[str, Any] = {}
+        node_config: dict[str, Any] = {}
+
+        for key, value in section.items():
+            if isinstance(value, Mapping):
+                child_sections[key] = value
+            else:
+                node_config[key] = value
+
+        if node_config:
+            result[node] = node_config
+
+        result.update(_flatten_toml_sections(child_sections, prefix=node))
+
+    return result
+
+
 def add(node: str | None, factory: str, reuse: bool = True,
         allowed_class_modules: tuple[str, ...] | None = None,
         **kwargs: Any) -> None:
@@ -283,3 +310,53 @@ def from_config(filename: str,
             allowed_class_modules=allowed_class_modules,
             **_coerce_file_config_section(cfg))
 
+
+def from_toml(filename: str,
+              encoding: str | None = None,
+              allowed_class_modules: tuple[str, ...] | None = None) -> None:
+    """Configure cache nodes from a TOML file.
+
+    Args:
+        filename: Configuration file path.
+        encoding: Optional file encoding.
+        allowed_class_modules: Optional tuple of allowed module prefixes used
+            to validate configured ``factory`` paths before importing.
+
+    """
+    import tomllib  # pylint: disable=import-outside-toplevel
+
+    if encoding is None:
+        with open(filename, 'rb') as file_obj:
+            config = tomllib.load(file_obj)
+    else:
+        with open(filename, encoding=encoding) as file_obj:
+            config = tomllib.loads(file_obj.read())
+
+    remove_all()
+
+    root_section = config.get('__root__', {})
+    root_config = (
+        dict(root_section) if isinstance(root_section, Mapping) else {}
+    )
+
+    factory = root_config.pop('factory', _DEFAULT_BACKEND)
+    add('', factory=factory, reuse=False,
+        allowed_class_modules=allowed_class_modules,
+        **root_config)
+
+    all_sections: dict[str, Any] = {
+        name: section
+        for name, section in config.items()
+        if name not in ('__root__', 'caches')
+    }
+
+    caches_section = config.get('caches')
+    if isinstance(caches_section, Mapping):
+        all_sections.update(caches_section)
+
+    for node, cfg in _flatten_toml_sections(all_sections).items():
+        section = dict(cfg)
+        factory = section.pop('factory', _DEFAULT_BACKEND)
+        add(node, factory=factory,
+            allowed_class_modules=allowed_class_modules,
+            **section)

@@ -611,6 +611,44 @@ passed to cache constructors: `true`/`false` become booleans, integer
 and floating-point literals become numbers, and any other value is kept
 as a string.
 
+For both INI and TOML, the root cache node uses the reserved
+`__root__` section/table name. This is a project convention (INI has no
+native root object).
+
+You can also configure caches from TOML using `pluca.cache.from_toml()`.
+In general, TOML is preferred over INI because value types are preserved
+directly (for example booleans, numbers, and arrays):
+
+    >>> from tempfile import NamedTemporaryFile
+    >>>
+    >>> temp = NamedTemporaryFile(mode='w+', suffix='.toml')
+    >>> n = temp.write('''
+    ...
+    ...     [__root__]
+    ...     factory = 'pluca.memory'
+    ...     max_entries = 10
+    ...
+    ...     [mod]
+    ...     factory = 'pluca.null'
+    ...
+    ...     [pkg.mod]
+    ...     factory = 'pluca.file'
+    ...     name = 'pkg_mod'
+    ...     cache_dir = '/tmp'
+    ...
+    ... ''')
+    >>> temp.flush()
+    >>>
+    >>> pluca.cache.from_toml(temp.name)
+    >>>
+    >>> pluca.cache.get_cache('mod')  # doctest: +ELLIPSIS
+    <pluca.Cache object at ...>
+
+A module allowlist is also available for TOML-based configuration:
+
+    >>> pluca.cache.from_toml(temp.name,
+    ...                       allowed_class_modules=('pluca',))
+
 A facility to set up the API using a configuration file is also
 provided. Here is an example:
 

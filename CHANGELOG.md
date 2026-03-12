@@ -21,6 +21,10 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 - A `task spellcheck` command powered by `codespell`.
 - Optional class-loading allowlists for dynamic cache configuration APIs
   (`dict_config()`, `file_config()`, and composite cache config loading).
+- New global `from_toml()` helper for TOML-based cache configuration.
+- README documentation now recommends TOML over INI when possible because
+  TOML preserves value types, and clarifies the reserved `__root__`
+  section/table convention used for root cache configuration.
 - File backend locking is now configurable via `locking=` (`'auto'`,
   mechanism name, or `None`). The default auto-selects the most efficient
   stdlib mechanism for the current platform. Locking is applied per cache

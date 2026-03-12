@@ -407,6 +407,77 @@ class TestCache(unittest.TestCase):
         self.assertEqual(mod.kwargs['threshold'], 2.5)
         self.assertEqual(mod.kwargs['label'], 'cache-v2')
 
+    def test_from_toml(self) -> None:
+        # pylint: disable-next=consider-using-with
+        temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.toml')
+        temp.write('''
+        [__root__]
+        factory = 'pluca.file'
+
+        [mod]
+        factory = 'pluca.null'
+
+        [pkg.mod]
+        factory = 'pluca.memory'
+        max_entries = 2
+        ''')
+        temp.flush()
+        temp.seek(0)
+
+        plc.from_toml(temp.name)
+
+        cache = plc.get_cache()
+        self._assert_file_cache(cache)
+
+        cache = plc.get_cache('non-existent')
+        self._assert_file_cache(cache)
+
+        cache = plc.get_cache('mod')
+        self._assert_null_cache(cache)
+
+        cache = plc.get_cache('pkg.mod')
+        self._assert_memory_cache(cache)
+        self.assertEqual(cache.max_entries, 2)
+        self.assertIsInstance(cache.max_entries, int)
+
+    def test_from_toml_types_preserved(self) -> None:
+        # pylint: disable-next=consider-using-with
+        temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.toml')
+        temp.write('''
+        [__root__]
+        factory = 'tests.test_cache:_ConfigProbeAdapter'
+        enabled = true
+        count = 10
+        threshold = 0.5
+        tags = ['a', 'b']
+        ''')
+        temp.flush()
+        temp.seek(0)
+
+        plc.from_toml(temp.name, allowed_class_modules=('tests',))
+
+        root = plc.get_cache()
+        self.assertIs(root.kwargs['enabled'], True)
+        self.assertEqual(root.kwargs['count'], 10)
+        self.assertEqual(root.kwargs['threshold'], 0.5)
+        self.assertEqual(root.kwargs['tags'], ['a', 'b'])
+
+    def test_from_toml_allowed_class_modules(self) -> None:
+        # pylint: disable-next=consider-using-with
+        temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.toml')
+        temp.write('''
+        [__root__]
+        factory = 'tests.test_cache:_ConfigProbeAdapter'
+        ''')
+        temp.flush()
+        temp.seek(0)
+
+        with self.assertRaises(ValueError):
+            plc.from_toml(temp.name, allowed_class_modules=('pluca',))
+
+        plc.from_toml(temp.name, allowed_class_modules=('tests',))
+        self.assertEqual(plc.get_cache().kwargs, {})
+
     def test_flush(self) -> None:
         plc.add(None, 'pluca.memory')
         plc.add('mod', 'pluca.file')

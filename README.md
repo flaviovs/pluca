@@ -249,6 +249,8 @@ On the `sqlite3` backend, `put_many()` is atomic: all rows are written
 in a single transaction and committed once. If one row fails, no rows
 from that `put_many()` call are persisted.
 
+New `sqlite3` cache tables are created with SQLite `WITHOUT ROWID`.
+
 Use `get_many()` to get many results at once. This method returns a
 list of _(key, value)_ tuples:
 

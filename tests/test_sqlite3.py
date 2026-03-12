@@ -71,6 +71,17 @@ class TestSqlite3BackEnd(CacheTester, unittest.TestCase):
         with self.assertRaises(KeyError):
             cache.get('ok')
 
+    def test_table_is_created_without_rowid(self) -> None:
+        with tempfile.NamedTemporaryFile() as ctx:
+            cache = pluca.sqlite3.Cache(ctx.name)
+            row = cache._conn.execute(
+                "SELECT sql FROM sqlite_master "
+                "WHERE type = 'table' AND name = 'cache'"
+            ).fetchone()
+
+            self.assertIsNotNone(row)
+            self.assertIn('WITHOUT ROWID', row[0].upper())
+
     def test_remove_persists(self) -> None:
         with tempfile.NamedTemporaryFile() as ctx:
             cache = pluca.sqlite3.Cache(ctx.name)

@@ -59,7 +59,8 @@ class SQLite3Cache(pluca.Cache):
         self._conn.execute(f'CREATE TABLE IF NOT EXISTS {self._table} ('
                            f'{self._k_col} VARCHAR PRIMARY KEY, '
                            f'{self._v_col} BLOB NOT NULL, '
-                           f'{self._exp_col} FLOAT)')
+                           f'{self._exp_col} FLOAT) '
+                           'WITHOUT ROWID')
 
     def _commit(self) -> None:
         if self._conn.in_transaction:

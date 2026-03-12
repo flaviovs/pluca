@@ -2,11 +2,18 @@ import sys
 import unittest
 import tempfile
 import time
+from typing import Any, cast
 
 import pluca.file
 import pluca.null
 import pluca.memory
 import pluca.cache as plc
+
+
+class _ConfigProbeCache(pluca.null.Cache):
+
+    def __init__(self, **kwargs: Any) -> None:
+        self.kwargs = kwargs
 
 
 # pylint: disable=too-many-public-methods
@@ -175,7 +182,7 @@ class TestCache(unittest.TestCase):
 
         [pkg.mod]
         class = memory
-        max_entries = 100
+        max_entries = 2
         ''')
         temp.flush()
         temp.seek(0)
@@ -193,6 +200,55 @@ class TestCache(unittest.TestCase):
 
         cache = plc.get_cache('pkg.mod')
         self.assertIsInstance(cache, pluca.memory.Cache)
+        mem_cache = cast(pluca.memory.Cache, cache)
+        self.assertEqual(mem_cache.max_entries, 2)
+        self.assertIsInstance(mem_cache.max_entries, int)
+
+        mem_cache.put('a', 1)
+        mem_cache.put('b', 2)
+        mem_cache.put('c', 3)
+        self.assertTrue(mem_cache.has('c'))
+
+    def test_file_config_value_coercion(self) -> None:
+        # pylint: disable-next=consider-using-with
+        temp = tempfile.NamedTemporaryFile(mode='w+', suffix='.ini')
+        temp.write('''
+        [__root__]
+        class = tests.test_cache._ConfigProbeCache
+        enabled = true
+        disabled = false
+        count = 10
+        threshold = 0.5
+        label = cache-v1
+
+        [mod]
+        class = tests.test_cache._ConfigProbeCache
+        count = 20
+        enabled = false
+        threshold = 2.5
+        label = cache-v2
+        ''')
+        temp.flush()
+        temp.seek(0)
+
+        plc.file_config(temp.name)
+
+        root = plc.get_cache()
+        self.assertIsInstance(root, _ConfigProbeCache)
+        root_probe = cast(_ConfigProbeCache, root)
+        self.assertIs(root_probe.kwargs['enabled'], True)
+        self.assertIs(root_probe.kwargs['disabled'], False)
+        self.assertEqual(root_probe.kwargs['count'], 10)
+        self.assertEqual(root_probe.kwargs['threshold'], 0.5)
+        self.assertEqual(root_probe.kwargs['label'], 'cache-v1')
+
+        mod = plc.get_cache('mod')
+        self.assertIsInstance(mod, _ConfigProbeCache)
+        mod_probe = cast(_ConfigProbeCache, mod)
+        self.assertEqual(mod_probe.kwargs['count'], 20)
+        self.assertIs(mod_probe.kwargs['enabled'], False)
+        self.assertEqual(mod_probe.kwargs['threshold'], 2.5)
+        self.assertEqual(mod_probe.kwargs['label'], 'cache-v2')
 
     def test_flush(self) -> None:
         plc.add(None, 'memory')

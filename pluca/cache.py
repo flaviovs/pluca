@@ -14,6 +14,31 @@ logger = logging.getLogger(__name__)
 _DEFAULT_BACKEND = 'file'
 
 
+def _coerce_file_config_value(value: str) -> Any:
+    value_l = value.lower()
+
+    if value_l == 'true':
+        return True
+    if value_l == 'false':
+        return False
+
+    try:
+        return int(value)
+    except ValueError:
+        pass
+
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
+
+def _coerce_file_config_section(
+        section: Mapping[str, str]) -> dict[str, Any]:
+    return {name: _coerce_file_config_value(value)
+            for (name, value) in section.items()}
+
+
 def add(node: str | None, cls: str, reuse: bool = True,
         **kwargs: Any) -> None:
 
@@ -147,9 +172,9 @@ def file_config(filename: str, encoding: str | None = None) -> None:
         section = {}
 
     cls = section.pop('class', _DEFAULT_BACKEND)
-    add('', cls=cls, reuse=False, **section)
+    add('', cls=cls, reuse=False, **_coerce_file_config_section(section))
 
     for name in filter(lambda x: x != '__root__', config.sections()):
-        cfg: dict[str, Any] = dict(config[name])
+        cfg = dict(config[name])
         cls = cfg.pop('class', _DEFAULT_BACKEND)
-        add(name, cls=cls, **cfg)
+        add(name, cls=cls, **_coerce_file_config_section(cfg))

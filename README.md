@@ -457,6 +457,11 @@ You can also configure the API using a dict-like object using
     >>> pluca.cache.get_cache('mod')
     NullCache()
 
+Values loaded from INI files are parsed conservatively before they are
+passed to cache constructors: `true`/`false` become booleans, integer
+and floating-point literals become numbers, and any other value is kept
+as a string.
+
 A facility to set up the API using a configuration file is also
 provided. Heres an example:
 

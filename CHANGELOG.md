@@ -29,6 +29,8 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 - DBM now respects `max_age` correctly.
 - `max_age=0` now expires entries immediately across memory, DBM, and SQL
   backends.
+- Global `file_config()` now coerces INI booleans and numeric values before
+  passing backend kwargs, avoiding delayed type errors at runtime.
 - Developer-quality fixes: restored missing mypy overrides, fixed test file
   encoding warnings, and cleaned spelling/docs issues.
 

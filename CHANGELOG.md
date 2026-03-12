@@ -64,12 +64,13 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
 
 ### Changed
 
+- SQLite3 now creates new cache tables with `WITHOUT ROWID`.
+- Packaging/build system moved to Flit.
 - **BC BREAK:** The project now requires Python 3.11+.
 - **BC BREAK:** Backend implementation now uses adapters instead of
   `pluca.Cache` subclass inheritance. Built-in backend modules now expose
   `Adapter` adapter classes, and module-only factories resolve to
   `:Adapter`.
-- SQLite3 now creates new cache tables with `WITHOUT ROWID`.
 - **BC BREAK:** Internal cache ABC method names were standardized (`key` ->
   `mkey`, `flush` -> `_flush`), which may require updates in custom backend
   subclasses.
@@ -77,7 +78,9 @@ Entries marked as **BC BREAK** indicate backward-incompatible changes.
   specific behavior. PostgreSQL/MySQL support will move to separate packages.
 - **BC BREAK:** Removed the generic `pluca.sql` backend from core.
   Core SQL cache support is now SQLite-only via `pluca.sqlite3`.
-- Packaging/build system moved to Flit.
+- **BC BREAK:** Global cache configuration helpers were renamed:
+  `dict_config()` -> `from_dict()` and
+  `file_config()` -> `from_config()`.
 
 ### Removed
 

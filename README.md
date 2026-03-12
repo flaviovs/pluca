@@ -578,9 +578,9 @@ You can also explicitly choose locking behavior per file cache:
     ...                 cache_dir='/tmp', locking=None)
 
 You can also configure the API using a dict-like object using
-`pluca.cache.dict_config()`:
+`pluca.cache.from_dict()`:
 
-    >>> pluca.cache.dict_config({
+    >>> pluca.cache.from_dict({
     ...     'factory': 'pluca.memory',  # The root cache.
     ...     'max_entries': 10,
     ...
@@ -602,7 +602,7 @@ To restrict dynamic class loading, pass `allowed_class_modules`. This
 accepts module prefixes, so `('pluca',)` allows classes under
 `pluca.*`:
 
-    >>> pluca.cache.dict_config({
+    >>> pluca.cache.from_dict({
     ...     'factory': 'pluca.memory',
     ... }, allowed_class_modules=('pluca',))
 
@@ -634,14 +634,14 @@ provided. Here is an example:
     ... ''')
     >>> temp.flush()
     >>>
-    >>> pluca.cache.file_config(temp.name)
+    >>> pluca.cache.from_config(temp.name)
     >>>
     >>> pluca.cache.get_cache('mod')  # doctest: +ELLIPSIS
     <pluca.Cache object at ...>
 
 The same restriction is available for INI-based configuration:
 
-    >>> pluca.cache.file_config(temp.name,
+    >>> pluca.cache.from_config(temp.name,
     ...                         allowed_class_modules=('pluca',))
 
 

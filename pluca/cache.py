@@ -217,8 +217,8 @@ def basic_config(factory: str = _DEFAULT_BACKEND,
         **kwargs)
 
 
-def dict_config(config: Mapping[str, Any],
-                allowed_class_modules: tuple[str, ...] | None = None) -> None:
+def from_dict(config: Mapping[str, Any],
+              allowed_class_modules: tuple[str, ...] | None = None) -> None:
     """Configure cache nodes from a mapping.
 
     Args:
@@ -247,7 +247,7 @@ def dict_config(config: Mapping[str, Any],
             **cfg)
 
 
-def file_config(filename: str,
+def from_config(filename: str,
                 encoding: str | None = None,
                 allowed_class_modules: tuple[str, ...] | None = None) -> None:
     """Configure cache nodes from an INI-style file.
@@ -282,3 +282,4 @@ def file_config(filename: str,
         add(name, factory=factory,
             allowed_class_modules=allowed_class_modules,
             **_coerce_file_config_section(cfg))
+

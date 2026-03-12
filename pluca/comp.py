@@ -116,6 +116,12 @@ class CompositeCache(pluca.Cache):
 
     @property
     def caches(self) -> list[pluca.Cache]:
+        """Return a copy of configured child caches.
+
+        Returns:
+            A shallow copy of child cache instances.
+
+        """
         return self._caches.copy()
 
     def _put(self, mkey: Any, value: Any,
@@ -133,11 +139,23 @@ class CompositeCache(pluca.Cache):
         raise KeyError(mkey)
 
     def gc(self) -> None:
+        """Run garbage collection on all child caches."""
         for cache in self._caches:
             cache.gc()
 
     def get_put(self, key: Any, func: Callable[[], Any],
                 max_age: float | None = None) -> Any:
+        """Get a value or compute and store it in all child caches.
+
+        Args:
+            key: Entry key.
+            func: Callable used to compute the value on cache miss.
+            max_age: Maximum age in seconds for newly cached values.
+
+        Returns:
+            Cached or computed value.
+
+        """
         mkey = self._map_key(key)
         try:
             return self._get(mkey)
@@ -153,6 +171,12 @@ class CompositeCache(pluca.Cache):
             cache._remove(mkey)  # pylint: disable=protected-access
 
     def remove_many(self, keys: Iterable[Any]) -> None:
+        """Remove multiple keys from all child caches.
+
+        Args:
+            keys: Iterable of entry keys.
+
+        """
         keys = tuple(keys)
         for cache in self._caches:
             cache.remove_many(keys)
@@ -162,12 +186,22 @@ class CompositeCache(pluca.Cache):
             cache.flush()
 
     def has(self, key: Any) -> bool:
+        """Check whether any child cache contains a key.
+
+        Args:
+            key: Entry key.
+
+        Returns:
+            ``True`` if any cache contains the key, else ``False``.
+
+        """
         for cache in self._caches:
             if cache.has(key):
                 return True
         return False
 
     def shutdown(self) -> None:
+        """Shutdown all child caches and clear the chain."""
         for cache in self._caches:
             cache.shutdown()
         self._caches = []

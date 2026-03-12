@@ -114,6 +114,7 @@ class MemoryCache(pluca.Cache):
         self._count = len(self._storage)
 
     def gc(self) -> None:
+        """Delete expired entries and enforce entry limits."""
         self._gc()
         if (self.max_entries is not None
                 and self._count > self.max_entries):

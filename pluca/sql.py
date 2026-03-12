@@ -142,6 +142,12 @@ class SqlCache(pluca.Cache):
             raise KeyError(mkey)
 
     def remove_many(self, keys: Iterable[Any]) -> None:
+        """Remove multiple entries in a single SQL statement.
+
+        Args:
+            keys: Iterable of cache keys.
+
+        """
         items = tuple(self._map_key(k) for k in keys)
         cur = self._conn.cursor()
         cur.execute(f'DELETE FROM {self._table} '
@@ -169,6 +175,17 @@ class SqlCache(pluca.Cache):
 
     def get_many(self, keys: Iterable[Any],
                  default: Any = ...) -> list[tuple[Any, Any]]:
+        """Fetch multiple keys in one query.
+
+        Args:
+            keys: Iterable of cache keys.
+            default: Value to use for missing keys. If omitted, missing keys
+                are excluded.
+
+        Returns:
+            A list of ``(key, value)`` tuples.
+
+        """
 
         all_keys = {self._map_key(k): k for k in keys}
 
@@ -197,6 +214,7 @@ class SqlCache(pluca.Cache):
         return res
 
     def gc(self) -> None:
+        """Delete expired rows from the cache table."""
         cur = self._conn.cursor()
         cur.execute(f'DELETE FROM {self._table} '
                     f'WHERE {self._exp_col} <= {self._ph}',

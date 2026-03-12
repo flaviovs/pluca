@@ -65,6 +65,7 @@ class DbmCache(pluca.Cache):
         return key in self.dbm
 
     def gc(self) -> None:
+        """Delete expired entries and compact the DBM store when possible."""
         for key in self.dbm.keys():
             entry = self._loads(self.dbm[key])
             if not entry.is_fresh:
@@ -76,6 +77,7 @@ class DbmCache(pluca.Cache):
             pass
 
     def shutdown(self) -> None:
+        """Close the underlying DBM database handle."""
         self.dbm.close()
 
 

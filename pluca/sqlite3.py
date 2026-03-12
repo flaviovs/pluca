@@ -62,20 +62,47 @@ class SQLite3Cache(SqlCache):
 
     def put(self, key: Any, value: Any,
             max_age: float | None = None) -> None:
+        """Store a value and commit when needed.
+
+        Args:
+            key: Entry key.
+            value: Value to cache.
+            max_age: Maximum age in seconds.
+
+        """
         super().put(key, value, max_age)
         self._commit()
 
     def put_many(self,
                  data: Mapping[Any, Any] | Iterable[tuple[Any, Any]],
                  max_age: float | None = None) -> None:
+        """Store multiple values and commit when needed.
+
+        Args:
+            data: Mapping or iterable of ``(key, value)`` pairs.
+            max_age: Maximum age in seconds applied to all entries.
+
+        """
         super().put_many(data, max_age)
         self._commit()
 
     def remove(self, key: Any) -> None:
+        """Remove an entry and commit when needed.
+
+        Args:
+            key: Entry key.
+
+        """
         super().remove(key)
         self._commit()
 
     def remove_many(self, keys: Iterable[Any]) -> None:
+        """Remove multiple entries and commit when needed.
+
+        Args:
+            keys: Iterable of entry keys.
+
+        """
         super().remove_many(keys)
         self._commit()
 
@@ -84,11 +111,13 @@ class SQLite3Cache(SqlCache):
         self._commit()
 
     def gc(self) -> None:
+        """Delete expired rows, commit, and optimize the database."""
         super().gc()
         self._commit()
         self._conn.execute('PRAGMA optimize')
 
     def shutdown(self) -> None:
+        """Close the SQLite connection."""
         self._conn.close()
 
 

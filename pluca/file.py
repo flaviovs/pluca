@@ -177,6 +177,7 @@ class FileCache(pluca.Cache):
                 self._get_fresh_filename(path / entry)
 
     def gc(self) -> None:
+        """Delete expired cache files from the cache directory."""
         self._gc_dir(self._cache_root)
 
 

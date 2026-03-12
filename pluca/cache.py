@@ -41,6 +41,20 @@ def _coerce_file_config_section(
 
 def add(node: str | None, cls: str, reuse: bool = True,
         **kwargs: Any) -> None:
+    """Register a cache backend for a node.
+
+    Args:
+        node: Dot-delimited cache node path. ``None`` targets the root node.
+        cls: Fully qualified cache factory path. Short names are resolved as
+            ``pluca.<name>.Cache``.
+        reuse: Reuse an existing cache instance with identical class and
+            arguments when available.
+        **kwargs: Named arguments passed to the cache factory.
+
+    Raises:
+        ValueError: If the node is already configured.
+
+    """
 
     if node is None:
         node = ''
@@ -71,6 +85,17 @@ def add(node: str | None, cls: str, reuse: bool = True,
 
 
 def get_cache(node: str | None = None) -> Cache:
+    """Get the cache configured for a node.
+
+    The lookup falls back through parent nodes until the root cache.
+
+    Args:
+        node: Dot-delimited node path. ``None`` targets the root lookup.
+
+    Returns:
+        The resolved cache instance.
+
+    """
     if node is None:
         node = ''
 
@@ -91,10 +116,30 @@ def get_cache(node: str | None = None) -> Cache:
 
 
 def get_child(parent: str | None, child: str) -> Cache:
+    """Get a child node cache.
+
+    Args:
+        parent: Parent node path.
+        child: Child node name.
+
+    Returns:
+        The cache resolved for ``parent.child``.
+
+    """
     return get_cache(f'{parent or ""}.{child}')
 
 
 def remove(node: str | None = None, shutdown: bool = True) -> None:
+    """Remove a configured node cache.
+
+    Args:
+        node: Dot-delimited node path. ``None`` targets the root node.
+        shutdown: Call ``shutdown()`` on the cache before removing it.
+
+    Raises:
+        KeyError: If the node does not exist and it is not the root.
+
+    """
     if node is None:
         node = ''
 
@@ -116,6 +161,12 @@ def remove(node: str | None = None, shutdown: bool = True) -> None:
 
 
 def remove_all(shutdown: bool = True) -> None:
+    """Remove all configured caches.
+
+    Args:
+        shutdown: Call ``shutdown()`` on each cache before clearing.
+
+    """
     if shutdown:
         for cache in _caches.values():
             cache.shutdown()
@@ -125,11 +176,17 @@ def remove_all(shutdown: bool = True) -> None:
 
 
 def flush() -> None:
+    """Flush all configured caches."""
     for cache in _caches.values():
         cache.flush()
 
 
 def gc() -> None:
+    """Run garbage collection on all configured caches.
+
+    Backends that do not support garbage collection are skipped.
+
+    """
     for cache in _caches.values():
         try:
             cache.gc()
@@ -138,11 +195,25 @@ def gc() -> None:
 
 
 def basic_config(cls: str = _DEFAULT_BACKEND, **kwargs: Any) -> None:
+    """Configure only the root cache.
+
+    Args:
+        cls: Cache factory path or short backend name.
+        **kwargs: Named arguments passed to the cache factory.
+
+    """
     remove_all()
     add('', cls=cls, **kwargs)
 
 
 def dict_config(config: Mapping[str, Any]) -> None:
+    """Configure cache nodes from a mapping.
+
+    Args:
+        config: Mapping with root cache options and optional ``caches`` child
+            mapping where each key is a node name.
+
+    """
     config = dict(config)
 
     caches = config.pop('caches', {})
@@ -159,6 +230,13 @@ def dict_config(config: Mapping[str, Any]) -> None:
 
 
 def file_config(filename: str, encoding: str | None = None) -> None:
+    """Configure cache nodes from an INI-style file.
+
+    Args:
+        filename: Configuration file path.
+        encoding: Optional file encoding.
+
+    """
     import configparser  # pylint: disable=import-outside-toplevel
 
     config = configparser.ConfigParser()

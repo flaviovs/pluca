@@ -1,0 +1,153 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+This project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+Entries marked as **BC BREAK** indicate backward-incompatible changes.
+
+## [Unreleased]
+
+### Added
+
+- A new `CompositeCache` backend for composing multiple cache strategies.
+- New cache utility helpers, including `create_cachedir_tag()` and shared
+  cache-creation logic.
+- New global cache helpers: `flush()`, `gc()`, and a `shutdown` option for
+  `remove()`/`remove_all()`.
+- `None` can now be used as an alias for the root/global cache.
+- DBM backend support for `pathlib.Path` values.
+- A `task spellcheck` command powered by `codespell`.
+
+### Fixed
+
+- `FileCache` cache names are hardened against path traversal inputs.
+- Global `pluca.cache.gc()` now behaves correctly even when a backend does not
+  implement GC.
+- Root cache removal is now idempotent (safe to call multiple times).
+- DBM now respects `max_age` correctly.
+- Developer-quality fixes: restored missing mypy overrides, fixed test file
+  encoding warnings, and cleaned spelling/docs issues.
+
+### Changed
+
+- **BC BREAK:** The project now requires Python 3.11+.
+- **BC BREAK:** Internal cache ABC method names were standardized (`key` ->
+  `mkey`, `flush` -> `_flush`), which may require updates in custom backend
+  subclasses.
+- Packaging/build system moved to Flit.
+
+## [0.6.0] - 2023-02-17
+
+### Added
+
+- `remove_many()` and `shutdown()` APIs for better lifecycle and bulk-removal
+  control.
+- A SQLite3 backend.
+- DBM backend support for direct DBM file-name inputs.
+
+### Fixed
+
+- SQL backend `__repr__` output was corrected.
+- File backend writes now use temporary files to reduce race-condition risks in
+  concurrent scenarios.
+
+## [0.5.0] - 2023-02-17
+
+### Added
+
+- A benchmark module.
+- A `prune` option in the memory backend for bounded in-memory cache behavior.
+
+### Fixed
+
+- Memory backend serialization now behaves correctly.
+- Memory backend garbage collection now correctly removes expired entries.
+- Expanded linting quality checks (`pylint` extensions), disallowed `print()`,
+  and cleaned up backend representation/dataclass consistency.
+
+## [0.4.0] - 2023-02-15
+
+### Added
+
+- SQL and DBM backends.
+- `file_config()` in the global cache API.
+- SQL placeholder customization for cross-driver compatibility.
+- SQL support for MySQL `INSERT ... ON DUPLICATE` upserts.
+- PostgreSQL and MariaDB/MySQL test suites.
+- Docker Compose support for DB integration tests and multi-Python test runs.
+
+### Fixed
+
+- File backend persistence of pickled data is more robust.
+- Generic cache contract tests now explicitly exercise `gc()` behavior.
+- SQL backend now properly implements garbage collection.
+- DBM tests no longer leave temporary files behind.
+- `get_many()` now handles `None` defaults correctly.
+- `put()` now validates `max_age` inputs.
+- Added a pickle-security note and other README improvements.
+
+## [0.3.0] - 2023-02-14
+
+### Added
+
+- Utility developer tasks and a QA script.
+- Generic tests for key-type behavior.
+
+### Fixed
+
+- Decorator use with parameters no longer raises unexpected exceptions.
+- Null adapter signatures and methods were corrected/simplified.
+- `Cache` base class abstractness issue was fixed.
+- `get_many()`/`put_many()` now work better with dict inputs.
+- Typing coverage and mypy configuration were improved.
+- Expanded README caveats/examples and improved class docstrings.
+
+### Changed
+
+- **BC BREAK:** Global cache API was refactored for a simpler developer-facing
+  interface.
+- **BC BREAK:** Adapter classes were removed, which may require migration for
+  integrations relying on adapter-specific APIs.
+- **BC BREAK:** Key mapping internals changed (`_get_cahe_key` -> `_map_key`)
+  and key derivation now uses `repr((type, key))`, which can change cache-key
+  values across upgrades.
+- File backend cache name/directory mapping was refactored for clearer behavior.
+
+## [0.2.0] - 2021-12-27
+
+### Changed
+
+- **BC BREAK:** Renamed the cache-interface `cache_name` field to avoid naming
+  conflicts in integrations.
+
+## [0.1.2] - 2021-12-21
+
+### Added
+
+- Dynamic cache interface support.
+- Decorator-based caching support.
+
+## [0.1.1] - 2021-12-20
+
+### Changed
+
+- Packaging metadata now includes the README in `setup.cfg`.
+- Version handling switched to dynamic versioning for cleaner release
+  management.
+
+## [0.1.0] - 2021-12-20
+
+### Added
+
+- Initial public project packaging and scaffolding.
+- README and package classifiers.
+- Initial unit test suite, including behavior for removing missing keys.
+- Memory and null cache adapters.
+
+### Changed
+
+- Early cache interface and adapter naming were refactored during initial
+  release preparation.
+- Default cache-key hashing switched to SHA1.
